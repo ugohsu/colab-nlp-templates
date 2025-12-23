@@ -63,90 +63,133 @@ from libs import tokenize_sudachi
 ## 共通設計思想
 
 - **文書ID列を必須とする**  
-  文書単位の集計・分析を前提とするため、ID の有無による分岐は設けていません。
+  文書単位の集計・分析（LDA・文書ベクトル化など）を前提とするため、  
+  ID の有無による分岐は設けていません。
 - **出力列構造を固定**  
-  基本構成：`article_id`, `word`, `pos`（＋必要に応じて `token_info`）
-- **Janome / Sudachi で列構造と思想を統一**  
-  後続処理（BoW / TF-IDF / LDA など）を差し替え可能にするためです。
+  基本構成は  
+  `article_id`, `word`, `pos`（＋必要に応じて `token_info`）です。
+- **Janome / Sudachi で思想と列構造を統一**  
+  形態素解析器を差し替えても、後続処理が壊れないことを重視しています。
 - **教育用途と研究用途の両立**  
-  初学者にも説明しやすく、研究用途にもそのまま使える設計です。
+  初学者には分かりやすく、研究用途ではそのまま使える設計です。
 
 ---
 
-## Janome バージョン
+## Janome バージョン：`tokenize_janome`
 
 ### 概要
 
 `tokenize_janome` は、Pandas DataFrame に格納された日本語テキストを  
 **Janome** で形態素解析し、「1行 = 1トークン」の縦持ち DataFrame に変換する関数です。
 
-軽量で導入が簡単なため、**教育用途や小規模分析**に向いています。
-
-### 使用例（Janome）
-
-```python
-tokens = tokenize_janome(df)
-
-tokens = tokenize_janome(
-    df,
-    pos_keep={"名詞", "動詞", "形容詞"}
-)
-
-tokens = tokenize_janome(
-    df,
-    extra_col=None
-)
-```
+Janome は軽量でセットアップが容易なため、  
+**授業・演習・小規模データ分析**に向いています。
 
 ---
 
-## SudachiPy バージョン
+### 主な引数（Janome）
+
+| 引数名 | 説明 |
+|---|---|
+| `df` | 入力 DataFrame。`id_col` と `text_col` を必ず含む必要があります。 |
+| `id_col` | 文書ID列名（既定値：`article_id`）。 |
+| `text_col` | 解析対象テキスト列名（既定値：`article`）。 |
+| `use_base_form` | `True` の場合、Janome が返す原形（base_form）を使用します。 |
+| `pos_keep` | 抽出する品詞集合。`None` の場合は全品詞。 |
+| `stopwords` | 除外する語の集合。 |
+| `extra_col` | 追加情報列名。`None` を指定すると軽量化されます。 |
+
+※ Janome には Sudachi のような **正規化形（normalized form）はありません**。  
+`use_base_form=True` は、SudachiPy の `word_form="dictionary"` に最も近い挙動です。
+
+---
+
+## SudachiPy バージョン：`tokenize_sudachi`
 
 ### 概要
 
 `tokenize_sudachi` は、Pandas DataFrame に格納された日本語テキストを  
 **SudachiPy** で形態素解析し、「1行 = 1トークン」の縦持ち DataFrame に変換する関数です。
 
-分割粒度（A / B / C）や正規化形を扱えるため、  
-**中〜大規模データや研究用途**に向いています。
-
-### 使用例（SudachiPy）
-
-```python
-from sudachipy import SplitMode
-
-tokens = tokenize_sudachi(df)
-
-tokens = tokenize_sudachi(
-    df,
-    split_mode=SplitMode.A
-)
-
-tokens = tokenize_sudachi(
-    df,
-    extra_col=None
-)
-```
+SudachiPy では、**どの語形を分析に使うか**を明示的に選択できます。  
+この選択は、語彙数・集計結果・分析の安定性に大きく影響します。
 
 ---
 
-## Janome と SudachiPy の違い（要点）
+### 主な引数（SudachiPy）
+
+| 引数名 | 説明 |
+|---|---|
+| `df` | 入力 DataFrame。 |
+| `id_col` | 文書ID列名。 |
+| `text_col` | 解析対象テキスト列名。 |
+| `split_mode` | 分割粒度（A/B/C）。`C` は複合語をまとめやすい設定です。 |
+| `word_form` | トークンとして使用する語形（`surface` / `dictionary` / `normalized`）。 |
+| `pos_keep` | 抽出する品詞集合。 |
+| `stopwords` | 除外語集合。 |
+| `extra_col` | 追加情報列名。 |
+
+---
+
+## SudachiPy における語形の違い（重要）
+
+### 1. surface（表層形）
+- 文中に **実際に現れた形**をそのまま使用
+- 活用形・表記ゆれをすべて区別
+- 文体分析・表現比較向け
+
+例：  
+上昇した / 上昇して / 上昇する → すべて別トークン
+
+---
+
+### 2. dictionary（辞書形）【デフォルト】
+- 活用語を **辞書形（基本形）** に統一
+- 多くの NLP 分析で無難な選択
+
+例：  
+上昇した / 上昇して / 上昇する → 上昇する
+
+---
+
+### 3. normalized（正規化形）
+- 表記ゆれ（全角・半角・長音など）を強く吸収
+- 語彙が最も圧縮され、分析が安定
+
+例：  
+コンピューター / コンピュータ / ｺﾝﾋﾟｭｰﾀ → コンピュータ
+
+---
+
+### 語形の比較まとめ
+
+| 観点 | surface | dictionary | normalized |
+|---|---|---|
+| 活用の違い | 区別 | 吸収 | 吸収 |
+| 表記ゆれ | 区別 | 一部残る | 強く吸収 |
+| 語彙数 | 多い | 中 | 少ない |
+| 分析の安定性 | 低 | 高 | 非常に高 |
+
+---
+
+## Janome と SudachiPy の対応関係
 
 | 観点 | Janome | SudachiPy |
 |---|---|---|
-| 分割粒度 | 固定 | A / B / C |
-| 正規化形 | なし | あり |
-| 軽量性 | 高い | やや重い |
-| 精度 | 十分 | 高い |
-| 教育用途 | ◎ | ○ |
-| 研究用途 | △ | ◎ |
+| 表層形 | surface | surface |
+| 原形 | base_form | dictionary |
+| 正規化形 | なし | normalized |
 
 ---
 
-## 選択指針
+## 選択指針（まとめ）
 
-- **Janome**  
-  授業・演習 / 小規模データ / 導入の簡単さ重視  
+- **授業・演習**  
+  - Janome：`use_base_form=True`
+  - SudachiPy：`word_form="dictionary"`
 
-- **SudachiPy**  
-  研究用途 / 中〜大規模データ / 分析精度・再現性重視
+- **研究・大規模分析**  
+  - SudachiPy：`word_form="normalized"`
+
+- **文体・表現分析**  
+  - SudachiPy：`word_form="surface"`

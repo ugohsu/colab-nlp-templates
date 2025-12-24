@@ -82,8 +82,7 @@ from libs import (
 > fatal: destination path 'colab-nlp-templates' already exists
 > ```
 >
-> というエラーが出ますが、**すでに clone 済みであれば問題ありません**。  
-> その場合は `git clone` のセルはスキップしてください。
+> というエラーが出ます。当該セルで fatal を出した行以降のコードは実行されません。
 
 ---
 

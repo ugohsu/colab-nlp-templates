@@ -9,19 +9,12 @@ WordCloud は、形態素解析後の **Bag of Words（BoW）表現**を可視�
 
 ---
 
-## 最小構成での使い方（Colab）
+## 最小構成での使い方（Colab・ワンコピペ）
 
-WordCloud を作成するための **最小手順**は次のとおりです。
-
-### 1. 必要ライブラリのインストール
+以下のセルを **そのまま 1 回実行**してください。
 
 ```python
 !pip install wordcloud
-```
-
-### 2. リポジトリの取得と import
-
-```python
 !git clone https://github.com/ugohsu/colab-nlp-templates.git
 
 import sys
@@ -30,7 +23,9 @@ sys.path.append("/content/colab-nlp-templates")
 from libs import tokens_to_text, create_wordcloud
 ```
 
-### 3. 日本語フォント設定（重要）
+---
+
+## 日本語フォント設定（必須）
 
 WordCloud で日本語を正しく表示するには、  
 **事前に日本語フォント設定テンプレを実行する必要があります。**

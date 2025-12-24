@@ -47,13 +47,12 @@
 | 分類 | 内容 | 実装ファイル | 解説ドキュメント |
 |---|---|---|---|
 | 前処理 | 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
-| BoW | Bag of Words（概念整理） | ― | [`docs/bow/README.md`](./docs/bow/README.md) |
 | BoW / 可視化 | WordCloud 生成 | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md) |
 | I/O | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
 
 ---
 
-## Google Colab での基本的な使い方（libs）
+## 関数群（libs）の基本的な使い方
 
 ```python
 !git clone https://github.com/ugohsu/colab-nlp-templates.git
@@ -78,19 +77,29 @@ from libs import (
 
 ## 分析パイプラインの位置づけ（概要）
 
+本リポジトリで想定している典型的な分析の流れは、次のとおりです。
+
 ```text
 Google Sheets
     ↓（読み込みテンプレ）
 DataFrame
-    ↓（形態素解析）
-tokens（縦持ち）
-    ↓（Bag of Words）
-語頻度・WordCloud・TF-IDF 等
+    ↓（形態素解析：preprocess）
+tokens（1行＝1トークン）
+    ↓（Bag of Words 的整理）
+語頻度・WordCloud・TF-IDF など
     ↓
 Google Sheets / 図表
 ```
 
-BoW の考え方と本リポジトリ内での扱いについては、  
+このうち、
+
+- **形態素解析**は「文章 → 単語」への変換
+- **Bag of Words（BoW）**は「単語集合として文章を捉える」考え方
+- **WordCloud / TF-IDF 等**は BoW に基づく具体的な分析・可視化手法
+
+という位置づけになります。
+
+👉 BoW の考え方や、本リポジトリ内での扱いについては  
 [`docs/bow/README.md`](./docs/bow/README.md) を参照してください。
 
 ---

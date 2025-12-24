@@ -8,21 +8,21 @@ from .gsheet_io import write_df_to_gsheet
 from .bow import create_wordcloud
 
 from .corpus_pass1 import (
-    build_corpus_pass1,
+    process_manifest_to_jsonl,
 )
 
 __all__ = [
-    # --- 前処理 ---
+    # 前処理
     "tokenize_janome",
     "tokenize_sudachi",
     "tokens_to_text",
 
-    # --- BoW / 可視化 ---
+    # BoW / 可視化
     "create_wordcloud",
 
-    # --- I/O ---
+    # I/O
     "write_df_to_gsheet",
 
-    # --- 大規模コーパス（1パス目） ---
-    "build_corpus_pass1",
+    # 大規模テキスト処理（corpus 1パス目）
+    "process_manifest_to_jsonl",
 ]

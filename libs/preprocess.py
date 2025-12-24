@@ -36,7 +36,7 @@ def tokenize_text_janome(
     use_base_form: bool = True,
     pos_keep: Optional[Iterable[str]] = None,
     stopwords: Optional[set[str]] = None,
-    extra_info: bool = False,
+    extra_info: bool = True,
 ) -> list[TokenRecord]:
     """
     Janome で「1つのテキスト」をトークナイズします（高速経路）。
@@ -119,7 +119,7 @@ def tokenize_text_sudachi(
     word_form: WordForm = "dictionary",
     pos_keep: Optional[Iterable[str]] = None,
     stopwords: Optional[set[str]] = None,
-    extra_info: bool = False,
+    extra_info: bool = True,
 ) -> list[TokenRecord]:
     """
     SudachiPy で「1つのテキスト」をトークナイズします（高速経路）。
@@ -236,7 +236,7 @@ def tokenize_df(
     dict_type: Optional[Union[str, "pathlib.Path"]] = "core",
     word_form: WordForm = "dictionary",
     # 追加の挙動
-    extra_info: bool = False,
+    extra_info: bool = True,
 ) -> pd.DataFrame:
     """
     DataFrame の特定列（text_col）をトークナイズし、「1行=1トークン」の縦持ち DataFrame を返します。

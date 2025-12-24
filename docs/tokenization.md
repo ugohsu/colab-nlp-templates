@@ -119,7 +119,7 @@ df_tok = tokenize_df(
 
 | 引数 | 既定値 | 何をするか | 注意 |
 |---|---:|---|---|
-| `extra_info` | `False` | `token_info` に **詳細属性 dict** を入れる | 便利だが重くなる |
+| `extra_info` | `True` | `token_info` に **詳細属性 dict** を入れる | 便利だが重くなる |
 
 ---
 
@@ -178,19 +178,6 @@ df_tok = tokenize_df(df, engine="sudachi", pos_keep={"名詞", "動詞", "形容
 
 - **名詞だけ**にすると、トピックは作りやすいが、文のニュアンスが落ちやすい
 - 動詞・形容詞も残すと、語彙が増えますが解釈は豊かになります
-
----
-
-### `extra_col` と `extra_info`（軽量化のコツ）
-
-- `extra_col=None`  
-  → `token_info` 列を作らず、出力を軽くします（おすすめの軽量化）
-- `extra_info=True`  
-  → `token_info` に「詳細属性 dict」を入れます（便利だが重い）
-
-目安：
-- **授業・演習**：`extra_col="token_info"` のままでOK
-- **研究・大規模**：まず `extra_col=None` を検討（必要になったら戻す）
 
 ---
 

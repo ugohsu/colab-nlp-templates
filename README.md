@@ -16,13 +16,12 @@
 ### libs（import して使う）
 
 - リポジトリを clone した後、**import して使用**
-- 前処理・可視化・I/O など、分析の中核となる関数群
+- ゼミ内で共通利用する前処理・可視化・I/O 関数群
 
 ### docs（解説）
 
 - 各テンプレ・関数の **背景・理由・注意点**
-- README を補完する man / 解説書相当
-- **コードを増やさず理解を補助するための資料**
+- README を補完する解説書相当
 
 ---
 
@@ -40,7 +39,7 @@
 | 分類 | 内容 | 実装ファイル | 解説ドキュメント |
 |---|---|---|---|
 | 前処理 | 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
-| Bag of Words | 語頻度・WordCloud | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/README.md`](./docs/bow/README.md) |
+| BoW / 可視化 | 語頻度・WordCloud | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/README.md`](./docs/bow/README.md) |
 | I/O | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
 
 ---
@@ -70,56 +69,39 @@ from libs import (
 
 ## このリポジトリで学ぶ NLP の全体像
 
-本リポジトリは、**日本語 NLP 入門**として、  
-次のような段階構成を想定しています。
+本リポジトリでは、日本語テキスト分析を次の流れで段階的に学びます。
 
-### 1. テキストを「読む」
+### 1. テキストデータの準備
 
-- Google スプレッドシートから読む  
-- Google Drive 上のテキストファイルを読む  
-
-👉 入力データを **Python / Colab で扱える形にする**段階
-
----
-
-### 2. テキストを「単語」に分解する（前処理）
-
-- 形態素解析（Janome / SudachiPy）
-- 文書 ID を保ったままトークン化
-
-👉 文章を **分析可能な最小単位（単語）**に分解
+- Google スプレッドシートからの読み込み  
+  → [`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md)
+- ローカル / Drive 上のテキストファイル読み込み  
+  → [`docs/io_text_basic.md`](./docs/io_text_basic.md)
 
 ---
 
-### 3. 単語の集まりとして文章を見る（Bag of Words）
+### 2. 前処理（形態素解析）
 
-- 語頻度
-- WordCloud
-- BoW に基づく基本的な可視化・集計
+- 文書を「語」に分解し、分析可能な形に整える  
+- Janome / SudachiPy を用途に応じて使い分ける  
 
-👉 **意味モデルに進む前の、最重要な基礎段階**
-
-👉 詳細は [`docs/bow/README.md`](./docs/bow/README.md) を参照してください。
+→ [`docs/tokenization.md`](./docs/tokenization.md)
 
 ---
 
-### 4. （今後追加予定）
+### 3. Bag of Words（BoW）
 
-- TF-IDF
-- word2vec / doc2vec
-- 文書埋め込み・類似度・クラスタリング など
+- 文書を「語の集合」として表現する最も基本的な考え方
+- 語頻度・WordCloud などの可視化を通じて直感的に理解する  
 
----
+→ **BoW 総論**  
+　[`docs/bow/README.md`](./docs/bow/README.md)
 
-## 大規模テキストへの入口（テキスト I/O）
+→ **語頻度の計算（pandas / sklearn）**  
+　[`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md)
 
-Google スプレッドシートに載らない規模の文書群を扱うための  
-**最小構成のテキスト I/O** を以下で整理しています。
-
-- Google Drive のマウント
-- `with open` によるテキスト読み込み
-
-👉 [`docs/io_text_basic.md`](./docs/io_text_basic.md)
+→ **WordCloud**  
+　[`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md)
 
 ---
 

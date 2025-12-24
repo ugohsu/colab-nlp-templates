@@ -3,7 +3,13 @@
 # ============================================================
 
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud
+
+# WordCloud は optional dependency とし、未インストール時は
+# 実行時に分かりやすいエラーを出す
+try:
+    from wordcloud import WordCloud
+except ImportError as e:
+    WordCloud = None
 
 
 def create_wordcloud(
@@ -24,6 +30,19 @@ def create_wordcloud(
     - font_path はグローバル変数として定義済みであること
       （matplotlib 日本語フォント設定テンプレを事前に実行）
     """
+
+    if WordCloud is None:
+        raise ImportError(
+            "wordcloud がインストールされていません。\n"
+            "Google Colab では次を実行してください:\n"
+            "  !pip -q install wordcloud"
+        )
+
+    if "font_path" not in globals():
+        raise RuntimeError(
+            "font_path が定義されていません。\n"
+            "matplotlib 日本語フォント設定テンプレを事前に実行してください。"
+        )
 
     if stopwords is None:
         stopwords = set()
@@ -47,7 +66,7 @@ def create_wordcloud(
     plt.imshow(wcloud)
     plt.axis("off")
 
-    if outfile:
+    if outfile is not None:
         plt.savefig(outfile, bbox_inches="tight")
 
     plt.show()

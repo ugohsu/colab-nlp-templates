@@ -11,7 +11,7 @@ WordCloud は、形態素解析後の **Bag of Words（BoW）表現**を可視�
 
 ## 最小構成での使い方（Colab・ワンコピペ）
 
-以下のセルを **そのまま 1 回実行**してください。
+以下のセルを **そのまま上から順に 1 回ずつ実行**してください。
 
 ```python
 !pip install wordcloud
@@ -37,7 +37,15 @@ WordCloud で日本語を正しく表示するには、
 
 👉 上記テンプレを実行すると、  
 `font_path` が **グローバル変数として定義**され、  
-WordCloud 関数から参照できるようになります。
+`create_wordcloud` 関数から参照されます。
+
+```python
+# ★必須：日本語フォント設定
+%run /content/colab-nlp-templates/templates/matplotlib_japanese_font.py
+
+# 確認（これが表示されれば OK）
+print(font_path)
+```
 
 ---
 
@@ -111,6 +119,7 @@ create_wordcloud(
 #### 重要な前提
 - `font_path` が **事前に定義されていること**
   - 日本語フォント設定テンプレを先に実行してください
+  - `print(font_path)` が通ることを確認してください
 
 #### 主な引数
 
@@ -155,7 +164,9 @@ create_wordcloud(
 ### 日本語が表示されない
 
 - 日本語フォント設定テンプレが **未実行**の可能性があります  
-- `font_path` が定義されているか確認してください
+- `font_path` が定義されているか、`print(font_path)` で確認してください
+- WordCloud は matplotlib のフォント設定とは独立して  
+  **font_path を直接指定する必要があります**
 
 ---
 

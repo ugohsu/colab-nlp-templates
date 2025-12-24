@@ -38,12 +38,6 @@ def create_wordcloud(
             "  !pip -q install wordcloud"
         )
 
-    if "font_path" not in globals():
-        raise RuntimeError(
-            "font_path が定義されていません。\n"
-            "matplotlib 日本語フォント設定テンプレを事前に実行してください。"
-        )
-
     if stopwords is None:
         stopwords = set()
     else:

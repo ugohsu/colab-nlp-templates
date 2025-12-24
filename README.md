@@ -74,6 +74,17 @@ from libs import (
 　事前に実行すべきテンプレートについては、  
 　**対応する docs を必ず参照してください。**
 
+> ⚠️ **注意（Google Colab での git clone）**  
+> 以下の `git clone` は **最初の1回だけ実行してください**。  
+> 同じノートブックで 2 回以上実行すると、
+>
+> ```
+> fatal: destination path 'colab-nlp-templates' already exists
+> ```
+>
+> というエラーが出ますが、**すでに clone 済みであれば問題ありません**。  
+> その場合は `git clone` のセルはスキップしてください。
+
 ---
 
 ## このリポジトリで学ぶ NLP の全体像

@@ -60,7 +60,7 @@
 
 ---
 
-## Google Colab での基本的な使い方（libs）
+## 関数群 (libs に収録されている関数) の基本的な使い方
 
 ```python
 !git clone https://github.com/ugohsu/colab-nlp-templates.git

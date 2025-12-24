@@ -44,9 +44,8 @@ from libs import write_df_to_gsheet
 
 ## 前提（重要）
 
-本関数を使用するには、**事前に gspread クライアント（`gc`）が準備されている必要があります。**
-
-（※ 上記「最小構成での使い方」を参照してください）
+- `sheet_url` は **編集権限**を持つスプレッドシートの URL であること
+- `gc` は **認証済みの gspread クライアント**であること（上記テンプレで準備）
 
 ---
 
@@ -63,6 +62,7 @@ write_df_to_gsheet
 - Pandas DataFrame を Google スプレッドシートへ書き込む
 - 既存のワークシート（タブ）を **安全に上書き**
 - ワークシートが存在しない場合は **自動で新規作成**
+- DataFrame の列名（ヘッダー）も書き込む（常に `include_column_header=True`）
 
 ---
 
@@ -83,7 +83,102 @@ write_df_to_gsheet(
 
 ---
 
-## 使用例（Colab）
+## 引数（オプション）を詳細に解説
+
+### `df`（必須）
+
+- 書き込み対象の `pandas.DataFrame`
+- 関数内部で `df.copy()` を作るため、**元の DataFrame は破壊されません**
+- 典型例：集計結果、前処理後データ、分析結果など
+
+---
+
+### `gc`（必須）
+
+- 認証済みの `gspread` クライアント
+- Google Colab では以下のテンプレートを実行して作成します  
+  - [`templates/load_google_spreadsheet.py`](../templates/load_google_spreadsheet.py)
+
+**なぜ外から受け取るのか？**  
+- 認証は環境依存（Colab 固有）なのでテンプレに切り出し  
+- 書き込み関数は「書く」責務だけに集中させるため
+
+---
+
+### `sheet_url`（必須）
+
+- 書き込み先スプレッドシートの URL
+- **「編集可」以上の権限**が必要です
+
+**よくある失敗**
+- 閲覧権限しかない URL を指定すると、書き込み時にエラーになります
+
+---
+
+### `sheet_name`（必須）
+
+- 書き込み先ワークシート（タブ）の名前
+- 存在しない場合は **自動作成**されます
+
+**授業で便利な運用例**
+- `"tokens"`、`"bow"`、`"tfidf"`、`"lda_result"` のように  
+  処理の段階ごとにタブを分けると混乱しにくいです
+
+---
+
+### `include_index`（任意、既定 `False`）
+
+- `True`：DataFrame の index を 1 列目として書き込みます  
+- `False`：index は書き込みません（既定）
+
+**いつ `True` にする？**
+- index に意味がある場合（例：日付 index、銘柄コード index、ランキング順位など）
+- `df.reset_index()` せずに index を保持したまま書きたい場合
+
+**注意**
+- `include_index=True` にすると列数が 1 つ増えるため、  
+  Google Sheets 側で「想定より1列ずれた」と感じることがあります
+
+---
+
+### `clear_sheet`（任意、既定 `True`）
+
+- `True`：書き込み前に `ws.clear()` を実行し、**既存の内容を完全に消去**してから書き込みます  
+- `False`：既存内容を消さずに書き込みます（ただし後述の注意あり）
+
+**なぜ既定が `True` なのか？（教育用途で重要）**
+- 以前の出力が残ると、行数が短くなったときに「古い行が残って見える」などの混乱が起きやすい  
+- そのため、「常にこの関数を呼べばタブの内容が DataFrame と一致する」ことを優先しています
+
+**`False` にするケース**
+- 既存のセル装飾（色、罫線、コメント等）を残したいとき  
+  ※ ただし、`set_with_dataframe(..., resize=True)` によりシートサイズは変わる点に注意
+
+**強い注意**
+- `clear_sheet=True` の場合、既存データは消えます  
+  意図しない上書きを避けるため、授業では `sheet_name` を固定せず  
+  `"result_YYYYMMDD"` のように分ける運用も有効です
+
+---
+
+### `fillna`（任意、既定 `True`）
+
+- `True`：`NaN`（欠損値）を空文字 `""` に置き換えてから書き込みます  
+- `False`：`NaN` をそのまま書き込みます
+
+**なぜ既定が `True` なのか？**
+- Google Sheets は `NaN` を扱うと、セルが `"nan"` になったり空白になったりして見た目が不安定なことがあります  
+- 教育用途では「欠損は空欄として見せる」方が混乱が少ないため、既定を `True` にしています
+
+**`False` にするケース**
+- 欠損の有無を明示したい（例：欠損を後で検出したい）
+- `NaN` をそのまま残して別処理に回したい（ただし Sheets 上の見え方は不安定になり得ます）
+
+---
+
+## 使い方（Colab）
+
+### 最小例
 
 ```python
 from libs import write_df_to_gsheet
@@ -96,6 +191,54 @@ write_df_to_gsheet(
 )
 ```
 
+### index を書き込みたい場合
+
+```python
+write_df_to_gsheet(
+    df_result,
+    gc=gc,
+    sheet_url=sheet_url,
+    sheet_name="analysis_result",
+    include_index=True,
+)
+```
+
+### 上書きを避けたい（タブ名を変える）例
+
+```python
+write_df_to_gsheet(
+    df_result,
+    gc=gc,
+    sheet_url=sheet_url,
+    sheet_name="analysis_result_v2",
+)
+```
+
+---
+
+## よくある注意点
+
+### 書き込み権限エラー
+
+- スプレッドシートの共有設定を確認してください
+- **「編集可」権限**が必要です
+
+---
+
+### データが消えたように見える
+
+- `clear_sheet=True` が既定値です
+- 上書き保存を前提とした設計のため、**意図した挙動**です
+
+---
+
+## 想定ユースケース
+
+- 分析結果の保存
+- 学生への結果配布
+- Google Sheets 上での集計・可視化
+- Colab 完結型の分析パイプライン
+
 ---
 
 ## 関連ドキュメント
@@ -104,3 +247,9 @@ write_df_to_gsheet(
   - [`docs/load_google_spreadsheet.md`](./load_google_spreadsheet.md)
 - 形態素解析（前処理）  
   - [`docs/tokenization.md`](./tokenization.md)
+
+---
+
+この関数は、  
+**「Colab → 分析 → Google Sheets へ保存」**  
+という流れを安全かつ明確に実現するための、最小構成の I/O 関数です。

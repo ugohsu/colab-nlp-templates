@@ -56,7 +56,7 @@ print(font_path)
   - `word`：トークン
   - `pos`：品詞（大分類）
 
-（※ `tokenize_janome` / `tokenize_sudachi` の出力を想定）
+（※ `tokenize_df` の出力を想定）
 
 ---
 

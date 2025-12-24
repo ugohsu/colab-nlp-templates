@@ -1,6 +1,7 @@
 # 大規模テキスト処理（1パス目）：ファイル走査 → 形態素解析 → tokens.jsonl（再開可能）
 
-本ドキュメントでは、フォルダ内（サブディレクトリ含む）の大量のテキストファイルを対象に、次を **1パス目**として実行する方法を説明します。
+本ドキュメントでは、フォルダ内（サブディレクトリ含む）の大量のテキストファイルを対象に、
+次を **1パス目**として実行する方法を説明します。
 
 - `Path(root).rglob()` で再帰走査して **対象ファイル台帳（manifest）** を作成  
 - `pending / failed` のファイルだけ処理して **tokens.jsonl** に追記  
@@ -31,29 +32,29 @@
 
 例：`/content/tokens.jsonl`
 
-1行のイメージ：
 ```json
 {"doc_id": 12, "path": "news/2023/a.txt", "tokens": ["株価", "上昇", "する", "..."]}
 ```
 
-> JSONL は **1行ずつ読み込める**ので、巨大データでも扱いやすい形式です（全文書をメモリに載せない運用が可能）。
+> JSONL は **1行ずつ読み込める**ので、巨大データでも扱いやすい形式です。
 
 ---
 
 ## 前提
 
 - 本リポジトリを clone して `libs` を import できる状態であること
-- 形態素解析には `tokenize_sudachi`（既定）または `tokenize_janome` を使います  
-  → それぞれの導入は [`tokenization.md`](./tokenization.md) を参照してください。
+- 形態素解析の基本は [`tokenization.md`](./tokenization.md) を参照してください
+
+本 1パス目では、**DataFrame を使わず**
+「1テキスト → トークン列」を返す関数を内部的に利用します。
+これにより、大規模データでも安定して処理できます。
 
 ---
 
-## 最小テスト（ワンコピペで実行）
+## 最小テスト
 
-以下は「**最小で動くことの確認**」用です。  
+以下は「**最小で動くことの確認**」用です。
 （SudachiPy を使う例。Janome に切り替える場合は後述）
-
-> ✅ `!pip` と `!git` は **同じコードブロック**にまとめています（ワンコピペ運用）。
 
 ```python
 # --- 0) 依存ライブラリ + リポジトリ ---
@@ -63,12 +64,10 @@
 import sys
 sys.path.append("/content/colab-nlp-templates")
 
-# --- 1) 1パス目の関数と tokenizer を import ---
-from libs import tokenize_sudachi
+# --- 1) 1パス目の関数を import ---
 from libs.corpus_pass1 import process_manifest_to_jsonl
 
 # --- 2) 入力フォルダ（★要編集） ---
-# /content/texts 配下に .txt を置く（サブディレクトリOK）
 ROOT_DIR = "/content/texts"
 
 # --- 3) 出力（manifest + jsonl） ---
@@ -80,28 +79,22 @@ df_manifest = process_manifest_to_jsonl(
     root_dir=ROOT_DIR,
     manifest_csv=MANIFEST_CSV,
     jsonl_path=TOKENS_JSONL,
-    tokenize_func=tokenize_sudachi,
     ext=".txt",
-
-    # 最小構成：token_info は保存しない（軽量）
-    tokenize_kwargs={
-        "extra_col": None,
-        # 必要なら例：品詞や語形
-        # "pos_keep": {"名詞", "動詞", "形容詞"},
-        # "word_form": "dictionary",
-    },
-
-    # 安全側：1ファイルごとに台帳を保存（途中停止に強い）
     save_every=1,
 )
 
-# --- 5) 結果確認（先頭だけ） ---
 df_manifest.head()
 ```
+
+> 🔎 既定では **SudachiPy（高速・大規模向け）** が使われます。
+> tokenizer は内部で 1 度だけ初期化され、全ファイルで使い回されます。
 
 ---
 
 ## Janome に切り替える場合（最小）
+
+Janome を使う場合は、
+**1テキスト用の関数**を `tokenize_text_fn` として明示的に渡します。
 
 ```python
 !pip -q install janome
@@ -110,16 +103,15 @@ df_manifest.head()
 import sys
 sys.path.append("/content/colab-nlp-templates")
 
-from libs import tokenize_janome
+from libs import tokenize_text_janome
 from libs.corpus_pass1 import process_manifest_to_jsonl
 
 df_manifest = process_manifest_to_jsonl(
     root_dir="/content/texts",
     manifest_csv="/content/manifest.csv",
     jsonl_path="/content/tokens.jsonl",
-    tokenize_func=tokenize_janome,
+    tokenize_text_fn=tokenize_text_janome,
     ext=".txt",
-    tokenize_kwargs={"extra_col": None},
     save_every=1,
 )
 ```
@@ -134,35 +126,33 @@ df_manifest = process_manifest_to_jsonl(
   - `pending` / `failed` のものだけ再処理
 になります。
 
-> 重要：**再開の鍵は `manifest.csv` です。削除しないでください。**
+> **再開の鍵は `manifest.csv` です。削除しないでください。**
 
 ---
 
 ## よくある失敗と対処
 
 ### 1) 文字コード問題で失敗する
-- `encoding="utf-8"` 前提です。
-- Shift_JIS などが混ざる場合は、`encoding` を変えるか、`errors="replace"` で凌ぐ設計にします。
+- 既定は `encoding="utf-8"` / `errors="replace"` です。
+- 文字化けが気になる場合は、`encoding` を変更してください。
 
 ### 2) failed が残る
-- `manifest.csv` の `error` 列を見て原因を特定します。
-- 直した後に同じ関数を再実行すれば、`failed` だけ再挑戦します。
+- `manifest.csv` の `error` 列を確認してください。
+- 修正後、同じ関数を再実行すれば `failed` だけ再挑戦されます。
 
 ---
 
 ## 設計メモ（なぜこの形か）
 
-- 「ファイル内容を全部メモリに載せない」
-- 「走査を毎回やり直さない（台帳で固定する）」
-- 「失敗だけ再実行できる」
-- 「tokens.jsonl を 1行ずつ読みながら後段の集計に流せる」
+- ファイル内容をすべてメモリに載せない
+- 処理状況を台帳で管理する
+- 失敗ファイルだけ再実行できる
+- JSONL を後段処理にそのまま流せる
 
-という、大規模データの基本原則を満たすためです。
+という **大規模テキスト処理の基本原則**を満たすためです。
 
 ---
 
 ## 関連ドキュメント（相互参照）
 
 - 形態素解析（Janome / SudachiPy）：[`tokenization.md`](./tokenization.md)
-- 読み込み（Google Sheets）：[`load_google_spreadsheet.md`](./load_google_spreadsheet.md)
-- 書き込み（Google Sheets）：[`write_google_spreadsheet.md`](./write_google_spreadsheet.md)

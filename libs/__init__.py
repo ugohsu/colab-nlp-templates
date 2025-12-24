@@ -1,4 +1,7 @@
 from .preprocess import (
+    tokenize_df,
+    tokenize_text_janome,
+    tokenize_text_sudachi,
     tokenize_janome,
     tokenize_sudachi,
     tokens_to_text,
@@ -13,6 +16,9 @@ from .corpus_pass1 import (
 
 __all__ = [
     # 前処理
+    "tokenize_df",
+    "tokenize_text_janome",
+    "tokenize_text_sudachi",
     "tokenize_janome",
     "tokenize_sudachi",
     "tokens_to_text",

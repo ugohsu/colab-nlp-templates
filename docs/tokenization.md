@@ -17,7 +17,7 @@ LDA / NMF / TF-IDF / WordCloud / 語頻度集計などの分析処理に
 
 ### 0. どちらを使うか決める
 
-本リポジトリでは、以下の **2 種類の形態素解析関数**を提供しています。
+本リポジトリでは、以下の **2 種類の形態素解析エンジン**を提供しています。
 
 - **Janome 版**：軽量・導入が簡単（授業・演習向け）
 - **SudachiPy 版**：高精度・高機能（研究用途向け）
@@ -36,7 +36,14 @@ Janome と SudachiPy を **同時にインストールする必要はありま�
 import sys
 sys.path.append("/content/colab-nlp-templates")
 
-from libs import tokenize_janome
+from libs import tokenize_df
+
+df_tok = tokenize_df(
+    df,
+    id_col="article_id",
+    text_col="article",
+    engine="janome"
+)
 ```
 
 ---
@@ -50,7 +57,14 @@ from libs import tokenize_janome
 import sys
 sys.path.append("/content/colab-nlp-templates")
 
-from libs import tokenize_sudachi
+from libs import tokenize_df
+
+df_tok = tokenize_df(
+    df,
+    id_col="article_id",
+    text_col="article",
+    engine="sudachi"
+)
 ```
 
 ---
@@ -72,18 +86,21 @@ from libs import tokenize_sudachi
   形態素解析器を差し替えても、後続処理が壊れないことを重視しています。
 - **教育用途と研究用途の両立**  
   初学者には分かりやすく、研究用途ではそのまま使える設計です。
+- **大規模データでは高速化可能**  
+  内部では 1 テキスト用の関数を用いており、
+  streaming 処理や pass1 への拡張が可能です。
 
 ---
 
-## Janome バージョン：`tokenize_janome`
+## Janome バージョン（engine="janome"）
 
 ### 概要
 
-`tokenize_janome` は、Pandas DataFrame に格納された日本語テキストを  
-**Janome** で形態素解析し、「1行 = 1トークン」の縦持ち DataFrame に変換する関数です。
-
 Janome は軽量でセットアップが容易なため、  
 **授業・演習・小規模データ分析**に向いています。
+
+`tokenize_df(..., engine="janome")` を指定することで、  
+Janome を用いた形態素解析が実行されます。
 
 ---
 
@@ -104,15 +121,15 @@ Janome は軽量でセットアップが容易なため、
 
 ---
 
-## SudachiPy バージョン：`tokenize_sudachi`
+## SudachiPy バージョン（engine="sudachi"）
 
 ### 概要
 
-`tokenize_sudachi` は、Pandas DataFrame に格納された日本語テキストを  
-**SudachiPy** で形態素解析し、「1行 = 1トークン」の縦持ち DataFrame に変換する関数です。
-
 SudachiPy では、**どの語形を分析に使うか**を明示的に選択できます。  
 この選択は、語彙数・集計結果・分析の安定性に大きく影響します。
+
+`tokenize_df(..., engine="sudachi")` を指定することで、  
+SudachiPy を用いた形態素解析が実行されます。
 
 ---
 
@@ -185,7 +202,7 @@ SudachiPy では、**どの語形を分析に使うか**を明示的に選択で
 ## 選択指針（まとめ）
 
 - **授業・演習**  
-  - Janome：`use_base_form=True`
+  - Janome：`use_base_form=True`  
   - SudachiPy：`word_form="dictionary"`
 
 - **研究・大規模分析**  

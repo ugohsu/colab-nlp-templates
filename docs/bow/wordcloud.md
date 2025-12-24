@@ -11,7 +11,7 @@ WordCloud は、形態素解析後の **Bag of Words（BoW）表現**を可視�
 
 ## 最小構成での使い方（Colab・ワンコピペ）
 
-以下のセルを **そのまま 1 回実行**してください。
+以下のセルを **上から順に実行**してください。
 
 ```python
 !pip install wordcloud
@@ -28,26 +28,21 @@ from libs import tokens_to_text, create_wordcloud
 ## 日本語フォント設定（必須）
 
 WordCloud で日本語を正しく表示するには、  
-**日本語フォントファイルのパスを `font_path` に指定できている必要があります。**
+**日本語フォントファイルのパスが `font_path` に正しく設定されている必要があります。**
 
 - テンプレート（貼り付けて使う）  
   - [`templates/matplotlib_japanese_font.py`](../../templates/matplotlib_japanese_font.py)
 - 解説ドキュメント  
   - [`docs/matplotlib_japanese_font.md`](../matplotlib_japanese_font.md)
 
-👉 上記テンプレは、（Colab ノートブック上で）`font_path` を **グローバル変数として定義**し、  
-`create_wordcloud` 関数から参照される設計です。
-
-> 注意：このテンプレは、環境によってパスの調整が必要になる可能性があります。  
-> 「実行すれば必ず動く」とは限らないため、**必ず `font_path` が正しいフォントを指しているか確認**してください。
-
-### `font_path` の確認（強く推奨）
+👉 上記テンプレは、`font_path` を **グローバル変数として定義**することを目的としています。  
+ただし、環境によってはフォントパスの調整が必要になるため、
 
 - `font_path` が定義されているか
 - そのパスが実在するか
-- 指しているフォントで日本語が表示できるか
+- 日本語対応フォントを指しているか
 
-最低限、次が通ることを確認してください：
+を **必ず確認**してください。
 
 ```python
 print(font_path)
@@ -95,13 +90,6 @@ tokens_to_text(df, pos_keep=None)
 - `str`  
   スペース区切りの分かち書きテキスト
 
-#### 使用例
-
-```python
-sentence = tokens_to_text(tokens_df)
-sentence = tokens_to_text(tokens_df, pos_keep="名詞")
-```
-
 ---
 
 ### create_wordcloud
@@ -120,36 +108,49 @@ create_wordcloud(
 ```
 
 #### 役割
-- 分かち書き済みテキストから WordCloud を生成・表示・保存します。
+- 分かち書き済みテキストから WordCloud を生成し、
+- **表示（matplotlib）**
+- **画像ファイルとして保存（任意）**
+を行います。
 
 #### 重要な前提
 - `font_path` が **事前に定義されていること**
-  - 日本語フォント設定テンプレ（または同等の設定）を先に行ってください
-  - `print(font_path)` が通ることを確認してください
+  - 日本語フォント設定テンプレ、または同等の設定を先に行ってください
 
-#### 主な引数
+---
+
+#### 引数詳細
 
 - `sentence`（必須）  
-  分かち書き済みテキスト（`tokens_to_text` の出力）
+  分かち書き済みテキスト（`tokens_to_text` の出力）  
+  - 空文字列や空白のみの場合はエラーになります
 
 - `stopwords`（任意）  
-  除外したい語の集合（`set` / `list`）
+  WordCloud から除外したい語の集合  
+  - `set` / `list` を指定可能  
+  - `None` の場合は除外語なし
 
 - `outfile`（任意）  
   出力画像ファイル名  
-  - `None` を指定すると保存しません
+  - 例：`"wordcloud.png"`  
+  - `None` を指定すると **保存しません（表示のみ）**
 
 - `figsize`  
-  表示サイズ（matplotlib）
+  表示サイズ（matplotlib の `figure(figsize=...)`）
 
 - `background_color`  
-  背景色（既定：`"white"`）
+  背景色  
+  - 既定：`"white"`
 
 - `width`, `height`  
-  生成する画像サイズ（ピクセル）
+  生成する WordCloud 画像サイズ（ピクセル単位）  
+  - 表示サイズ（`figsize`）とは独立
 
 - `random_state`  
-  レイアウトの再現性確保用シード
+  レイアウトの再現性確保用乱数シード  
+  - 同じ値を指定すると、毎回ほぼ同じ配置になります
+
+---
 
 #### 使用例
 
@@ -159,7 +160,10 @@ sentence = tokens_to_text(tokens_df, pos_keep="名詞")
 create_wordcloud(
     sentence,
     stopwords={"する", "ある", "いる"},
-    outfile="wordcloud.png"
+    outfile="wordcloud.png",
+    background_color="white",
+    width=1200,
+    height=800,
 )
 ```
 
@@ -170,17 +174,17 @@ create_wordcloud(
 ### 日本語が表示されない
 
 - `font_path` が正しく設定されていない可能性があります  
-  - まず `print(font_path)` を確認してください
+  - `print(font_path)` で確認してください
 - WordCloud は matplotlib のフォント設定とは独立して  
-  **font_path を直接指定する必要があります**
-- パスが存在していても、日本語非対応フォントだと □（豆腐）になります
+  **フォントファイルパスを直接指定する必要があります**
+- 日本語非対応フォントの場合、□（豆腐）になります
 
 ---
 
 ### WordCloud が空になる
 
 - `pos_keep` を絞りすぎていないか確認してください
-- トークン数が極端に少ないと表示されません
+- トークン数が極端に少ない場合、描画されません
 
 ---
 

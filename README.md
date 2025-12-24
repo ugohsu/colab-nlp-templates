@@ -78,24 +78,54 @@ from libs import (
 
 ## このリポジトリで学ぶ NLP の全体像
 
+本リポジトリでは、**データの規模に応じた入力方法**から始め、  
+前処理 → Bag of Words → 可視化・出力という  
+**王道的な日本語 NLP 分析パイプライン**を段階的に学びます。
+
 ### 1. テキストデータの取得
 
-- 小規模：Google スプレッドシート  
-- 大規模：ディレクトリ配下のテキスト（jsonl + manifest）
+- **小規模データ（授業・演習向け）**  
+  Google スプレッドシートを入力データとして使用します。  
+  少量の文書を手軽に扱え、前処理や分析結果の確認に向いています。  
 
-→ [`docs/io_text_corpus_pass1.md`](./docs/io_text_corpus_pass1.md)
+  → [`templates/load_google_spreadsheet.py`](./templates/load_google_spreadsheet.py)  
+  → [`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md)
+
+- **大規模データ（研究・発展向け）**  
+  ディレクトリ配下に配置された多数のテキストファイルを対象に、  
+  **1パス目処理**として形態素解析結果を jsonl 形式で保存します。  
+  これにより、全文書をメモリに載せずに分析を進められます。  
+
+  → [`docs/io_text_corpus_pass1.md`](./docs/io_text_corpus_pass1.md)
 
 ### 2. 前処理（形態素解析）
+
+日本語テキストを解析し、  
+「1行 = 1トークン」の縦持ち DataFrame に変換します。  
+
+- Janome（軽量・授業向け）
+- SudachiPy（高精度・研究向け）
 
 → [`docs/tokenization.md`](./docs/tokenization.md)
 
 ### 3. Bag of Words（BoW）
 
-- 総論：[`docs/bow/README.md`](./docs/bow/README.md)
-- 語頻度：[`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md)
-- WordCloud：[`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md)
+形態素解析結果をもとに、  
+文章を「単語の集合」として数値化・可視化します。
+
+- **BoW 総論・位置づけ**  
+  → [`docs/bow/README.md`](./docs/bow/README.md)
+
+- **語頻度分析（最小構成）**  
+  → [`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md)
+
+- **WordCloud による可視化**  
+  → [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md)
 
 ### 4. 出力・共有
+
+分析結果を Google スプレッドシートへ書き戻し、  
+共有・配布・二次利用を可能にします。
 
 → [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md)
 

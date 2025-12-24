@@ -99,7 +99,6 @@ from libs import (
   Google スプレッドシートを入力データとして使用します。  
   少量の文書を手軽に扱え、前処理や分析結果の確認に向いています。  
 
-  → [`templates/load_google_spreadsheet.py`](./templates/load_google_spreadsheet.py)  
   → [`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md)
 
 - **大規模データ（研究・発展向け）**  

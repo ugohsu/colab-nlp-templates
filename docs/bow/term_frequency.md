@@ -1,36 +1,37 @@
 # 語頻度（Term Frequency）
 
-本ドキュメントでは、形態素解析済みの **tokens DataFrame**（「1行 = 1トークン」）から、  
-**語頻度（単語 × 出現回数）** を作る最小構成を示します。
+本ドキュメントでは、形態素解析済みの **tokens DataFrame**  
+（「1行 = 1トークン」の縦持ち形式）から、  
+**語頻度（単語 × 出現回数）** を求める最小構成を示します。
 
-- まず **pandas** だけで語頻度を出す（最小）
-- 次に **scikit-learn** に接続する（最小）
+ここでは、
 
-> ここでは「見栄えのための追加メソッド」は極力省略し、  
-> **学生が “必須の行” を迷わない** ことを優先します。
+- **文字列に戻さない**
+- **形態素解析を再実行しない**
+- **必須の操作だけを書く**
+
+ことを重視します。
 
 ---
 
 ## 前提：入力（tokens DataFrame）
 
-このドキュメントは、すでに形態素解析が完了している前提です。  
-入力は次の列を持つ DataFrame（例：`tokens`）です。
+入力は、すでに形態素解析が完了した DataFrame です。
 
-- `article_id`：文書ID（必須）
-- `word`：トークン
+最低限、次の列を含んでいる必要があります。
+
+- `article_id`：文書ID  
+- `word`：トークン  
 - `pos`：品詞（大分類）
-- （任意）`token_info`
 
-形態素解析の作り方は、こちらを参照してください。
+形態素解析の作成方法は、以下を参照してください。
 
 - 形態素解析（Janome / SudachiPy）：[`../tokenization.md`](../tokenization.md)  
 - BoW 章トップ：[`README.md`](README.md)
 
 ---
 
-## 0. 最小の準備（Colab）
-
-> この章は **tokens DataFrame から開始**するので、追加のライブラリは基本不要です。
+## 0. 準備（最小）
 
 ```python
 import pandas as pd
@@ -43,32 +44,31 @@ import pandas as pd
 ### 1-A. 全体の語頻度（単語 × 回数）
 
 ```python
-# tokens: [article_id, word, pos] を持つ DataFrame
 freq = tokens["word"].value_counts()
 freq.head()
 ```
 
-- **必須**：`value_counts()`（これだけで頻度が出ます）
-- `head()` は表示用（なくても動きます）
+- **必須**：`value_counts()`  
+- `head()` は表示用（省略可）
 
 ---
 
-### 1-B. 品詞で絞って語頻度（最小）
+### 1-B. 品詞で絞った語頻度（最小）
 
-例：名詞だけ
+例：名詞のみ
 
 ```python
 freq_noun = tokens.loc[tokens["pos"] == "名詞", "word"].value_counts()
 freq_noun.head()
 ```
 
-- **必須**：`loc[...]` で絞る + `value_counts()`
+- **必須**：`loc[...]` + `value_counts()`
 
 ---
 
-### 1-C. DataFrame 形式で持つ（最小）
+### 1-C. DataFrame として保持（最小）
 
-後で join したり、保存したりするなら DataFrame にします。
+後続処理や保存を考える場合、DataFrame にします。
 
 ```python
 freq_df = tokens["word"].value_counts().reset_index()
@@ -77,93 +77,88 @@ freq_df.head()
 ```
 
 - **必須**：`value_counts()` → `reset_index()`
-- 列名を付ける（これも後続作業のための最小限）
+- 列名付与は最小限
 
 ---
 
-## 2. scikit-learn に接続（最小）
+## 2. scikit-learn で語頻度（最小・推奨）
 
-ここでは **scikit-learn に形態素解析はさせません**。  
-すでに tokens（縦持ち）になっているものを、**文書ごとに結合して**から渡します。
+ここでは、**sklearn に形態素解析はさせません**。  
+tokens DataFrame から、
 
-> 以降は、`article_id` ごとに `word` をスペース区切りで連結した  
-> 「文書＝文字列」を作り、CountVectorizer / TfidfVectorizer に渡します。
+- 文書ごとにトークンの **list**
+- それをそのまま `CountVectorizer` に渡す
+
+という、最も素直な方法を用います。
 
 ---
 
-## 2-A. まず “文書＝文字列” を作る（最小）
+### 2-A. 文書ごとに「トークンの list」を作る
 
 ```python
-docs = (
+docs_tokens = (
     tokens
     .groupby("article_id")["word"]
-    .apply(lambda s: " ".join(s.astype(str)))
+    .apply(list)
 )
 ```
 
-- **必須**：`groupby(...).apply(" ".join)` の発想
-- `docs` は pandas の Series（index が article_id）
+- 各要素は `["株価", "上昇", "する", ...]` のような list
+- **文字列への結合は行いません**
 
 ---
 
-## 2-B. CountVectorizer（BoW 行列）に接続（最小）
-
-> すでに空白区切りの「分かち書き」なので、  
-> `token_pattern` を空白で拾うデフォルトのまま使えます。
+### 2-B. CountVectorizer に直接渡す
 
 ```python
 from sklearn.feature_extraction.text import CountVectorizer
 
-cv = CountVectorizer()
-X = cv.fit_transform(docs.values)   # (文書数 × 語彙数) の疎行列
+cv = CountVectorizer(
+    tokenizer=lambda x: x,
+    preprocessor=lambda x: x,
+    token_pattern=None,
+)
+
+X = cv.fit_transform(docs_tokens)
 vocab = cv.get_feature_names_out()
 ```
 
-- **必須**：`CountVectorizer()` と `fit_transform(...)`
-- `docs.values`（文字列配列）を渡すだけ
+- **必須設定**
+  - `tokenizer=lambda x: x`
+  - `preprocessor=lambda x: x`
+  - `token_pattern=None`
+- これにより、**事前トークン化済み入力**をそのまま使用
 
-### “全体の語頻度” を sklearn 側で出す（最小）
+---
+
+### 2-C. 全体の語頻度を求める
 
 ```python
-word_counts = X.sum(axis=0)                 # 語彙方向に合計
-freq_sklearn = pd.Series(word_counts.A1, index=vocab).sort_values(ascending=False)
+word_counts = X.sum(axis=0)
+freq_sklearn = pd.Series(word_counts.A1, index=vocab)
+freq_sklearn = freq_sklearn.sort_values(ascending=False)
 freq_sklearn.head()
 ```
 
-- **必須**：`X.sum(axis=0)` と `pd.Series(..., index=vocab)`
+- **必須**：`X.sum(axis=0)`
+- `A1` は numpy 配列への変換
 
 ---
 
-## 2-C. TF-IDF に接続（最小）
+## 注意（最小）
 
-```python
-from sklearn.feature_extraction.text import TfidfVectorizer
+### tokens に欠損がある場合
 
-tv = TfidfVectorizer()
-X_tfidf = tv.fit_transform(docs.values)
-vocab_tfidf = tv.get_feature_names_out()
-```
-
-- **必須**：`TfidfVectorizer()` と `fit_transform(...)`
-- TF-IDF の「全体ランキング」を作りたい場合は、平均などを取ります（ここは用途次第）
-
----
-
-## よくある注意（最小）
-
-### tokens に欠損がある
 ```python
 tokens = tokens.dropna(subset=["word"])
 ```
 
-### docs が空になる（全部 stopwords で消えた等）
-```python
-docs = docs[docs.str.len() > 0]
-```
-
 ---
 
-## 次に進む
+この方法により、
 
-- WordCloud：[`wordcloud.md`](wordcloud.md)  
-- BoW の位置づけ：[`README.md`](README.md)
+- pandas でも
+- scikit-learn でも
+
+**同じ tokens DataFrame** を起点として、  
+語頻度を一貫した形で扱うことができます。

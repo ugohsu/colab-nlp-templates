@@ -47,7 +47,7 @@
 | 分類 | 内容 | 実装ファイル | 解説ドキュメント |
 |---|---|---|---|
 | 前処理 | 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
-| BoW / 可視化 | 語頻度・WordCloud | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/README.md`](./docs/bow/README.md) |
+| BoW / 可視化 | 語頻度・WordCloud | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md) |
 | I/O | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
 | 大規模テキスト | コーパス1パス目処理（jsonl 出力） | [`libs/corpus_pass1.py`](./libs/corpus_pass1.py) | [`docs/io_text_corpus_pass1.md`](./docs/io_text_corpus_pass1.md) |
 

@@ -203,3 +203,42 @@ def tokenize_sudachi(
 
     columns = [id_col, "word", "pos"] + ([] if extra_col is None else [extra_col])
     return pd.DataFrame.from_records(records, columns=columns)
+
+
+def tokens_to_text(
+    df: pd.DataFrame,
+    *,
+    pos_keep: Optional[Iterable[str]] = None,
+) -> str:
+    """
+    形態素解析済み DataFrame から、指定した品詞の単語を抽出して
+    分かち書きテキスト（スペース区切り）を返す。
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        少なくとも ["word", "pos"] 列を含む DataFrame
+
+    pos_keep : None | str | Iterable[str]
+        抽出対象の品詞
+        - None        : 全品詞
+        - "名詞"      : 単一指定
+        - ("名詞", "動詞") : 複数指定
+
+    Returns
+    -------
+    str
+        分かち書き済みテキスト（スペース区切り）
+    """
+
+    if pos_keep is None:
+        return " ".join(df["word"].dropna().astype(str))
+
+    if isinstance(pos_keep, str):
+        pos_keep = (pos_keep,)
+
+    return " ".join(
+        df.query("pos in @pos_keep")["word"]
+          .dropna()
+          .astype(str)
+    )

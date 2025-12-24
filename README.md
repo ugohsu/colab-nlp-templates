@@ -1,35 +1,35 @@
 # Colab NLP Templates
 
 このリポジトリは、**Google Colaboratory 上で自然言語処理（NLP）を学ぶための  
-テンプレートおよび関数群**をまとめた教材用リポジトリです。
+テンプレートおよび関数群**をまとめた、**教育用途を主目的とした教材用リポジトリ**です。
 
-ゼミ・演習での利用を主目的とし、
+ゼミ・演習での利用を想定し、
 
 - **コードセルに貼り付けて使うテンプレート**
-- **import して使う共通関数群**
+- **import して使う共通関数群（ライブラリ）**
 - それらの背景・理由・注意点を説明する **ドキュメント**
 
 を明確に分離して整理しています。
 
 ---
 
-## 基本方針
+## ディレクトリ構成と基本方針
 
 ### templates（貼り付けて使う）
 
 - Google Colab の **コードセルにそのまま貼り付けて実行**
 - import はしない
-- 認証・初期設定・定型処理向け
+- 認証・初期設定・定型処理向けテンプレート
 
 ### libs（import して使う）
 
-- リポジトリを clone した後、**import して使用**
-- ゼミ内で共通利用する前処理・可視化・I/O 関数群
+- 本リポジトリを clone した後、**import して使用**
+- ゼミ内で共通利用する前処理・分析用の関数群
 
 ### docs（解説）
 
 - 各テンプレ・関数の **背景・理由・注意点**
-- README を補完する man / 解説書相当
+- 「なぜこの設定・設計が必要か」を説明する man / README 相当
 
 ---
 
@@ -47,8 +47,8 @@
 | 分類 | 内容 | 実装ファイル | 解説ドキュメント |
 |---|---|---|---|
 | 前処理 | 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
-| BoW / 可視化 | WordCloud 生成 | [`libs/bow.py`](./libs/bow.py) | [`docs/wordcloud.md`](./docs/wordcloud.md) |
-| I/O | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
+| 入出力 | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
+| BoW | Bag of Words / WordCloud | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/README.md`](./docs/bow/README.md) |
 
 ---
 
@@ -63,15 +63,29 @@ sys.path.append("/content/colab-nlp-templates")
 from libs import (
     tokenize_janome,
     tokenize_sudachi,
-    tokens_to_text,
-    create_wordcloud,
     write_df_to_gsheet,
 )
 ```
 
-※ 各関数に必要な外部ライブラリの install 方法や  
-　事前に実行すべきテンプレートについては、  
-　**対応する docs を必ず参照してください。**
+※ 形態素解析ライブラリ（Janome / SudachiPy）の install 方法や  
+　どちらを選ぶべきかは  
+　[`docs/tokenization.md`](./docs/tokenization.md) を参照してください。
+
+---
+
+## 分析パイプラインの全体像（想定）
+
+```text
+Google Sheets
+    ↓（読み込みテンプレ）
+DataFrame
+    ↓（形態素解析）
+tokens（縦持ち）
+    ↓（BoW）
+語頻度・WordCloud・TF-IDF など
+    ↓
+Google Sheets / 図表
+```
 
 ---
 
@@ -79,8 +93,8 @@ from libs import (
 
 - ゼミ・演習での日本語 NLP 入門
 - Google スプレッドシートを起点としたデータ分析
-- 形態素解析 → BoW → WordCloud / TF-IDF / トピックモデル
-- Colab 完結型の再現可能な分析パイプライン構築
+- 形態素解析 → BoW → 可視化・集計
+- 教育用途を意識した再現性のある Colab ノートブック作成
 
 ---
 

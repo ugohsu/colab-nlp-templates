@@ -24,13 +24,12 @@
 ### libs（import して使う）
 
 - リポジトリを clone した後、**import して使用**
-- ゼミ内で共通利用する前処理・入出力関数群
-- 分析パイプラインの中核となる処理を集約
+- ゼミ内で共通利用する前処理・可視化・I/O 関数群
 
 ### docs（解説）
 
 - 各テンプレ・関数の **背景・理由・注意点**
-- 「なぜこの設定が必要か」「どう使うべきか」を説明する man / README 相当
+- README を補完する man / 解説書相当
 
 ---
 
@@ -45,22 +44,15 @@
 
 ## 関数群（import して使う）
 
-| 内容 | 実装ファイル | 解説ドキュメント |
-|---|---|---|
-| 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
-| Google スプレッドシート書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
-
-### 提供関数
-
-- 前処理  
-  - `tokenize_janome`  
-  - `tokenize_sudachi`
-- 出力  
-  - `write_df_to_gsheet`
+| 分類 | 内容 | 実装ファイル | 解説ドキュメント |
+|---|---|---|---|
+| 前処理 | 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
+| BoW / 可視化 | WordCloud 生成 | [`libs/bow.py`](./libs/bow.py) | [`docs/wordcloud.md`](./docs/wordcloud.md) |
+| I/O | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
 
 ---
 
-## 関数群 (libs に収録されている関数) の基本的な使い方
+## Google Colab での基本的な使い方（libs）
 
 ```python
 !git clone https://github.com/ugohsu/colab-nlp-templates.git
@@ -71,31 +63,15 @@ sys.path.append("/content/colab-nlp-templates")
 from libs import (
     tokenize_janome,
     tokenize_sudachi,
+    tokens_to_text,
+    create_wordcloud,
     write_df_to_gsheet,
 )
 ```
 
-※ 形態素解析に必要なライブラリ（Janome / SudachiPy）の install 方法や  
-　どちらを選ぶべきかは [`docs/tokenization.md`](./docs/tokenization.md) を参照してください。
-
-※ Google スプレッドシートへの書き込みには、  
-　事前に認証・`gc` 作成が必要です。  
-　詳細は [`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md) を参照してください。
-
----
-
-## 典型的な利用フロー（Colab）
-
-1. **スプレッドシートを読み込む**  
-   - `templates/load_google_spreadsheet.py`
-2. **前処理・形態素解析を行う**  
-   - `tokenize_janome` / `tokenize_sudachi`
-3. **結果をスプレッドシートに書き戻す**  
-   - `write_df_to_gsheet`
-
-この流れにより、  
-**Colab → 分析 → Google Sheets**  
-という一連の作業を Colab 上で完結できます。
+※ 各関数に必要な外部ライブラリの install 方法や  
+　事前に実行すべきテンプレートについては、  
+　**対応する docs を必ず参照してください。**
 
 ---
 
@@ -103,9 +79,8 @@ from libs import (
 
 - ゼミ・演習での日本語 NLP 入門
 - Google スプレッドシートを起点としたデータ分析
-- 形態素解析 → BoW / TF-IDF / トピックモデル
-- 分析結果の Google Sheets への保存・共有
-- 教育用途を意識した再現性のある Colab ノートブック作成
+- 形態素解析 → BoW → WordCloud / TF-IDF / トピックモデル
+- Colab 完結型の再現可能な分析パイプライン構築
 
 ---
 

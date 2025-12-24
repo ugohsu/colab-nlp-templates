@@ -1,7 +1,7 @@
 # Colab NLP Templates
 
 このリポジトリは、**Google Colaboratory 上で自然言語処理（NLP）を学ぶための  
-テンプレートおよび関数群**をまとめた教材用リポジトリです。
+テンプレート・関数・解説ドキュメント**をまとめた教材用リポジトリです。
 
 ゼミ・演習での利用を主目的とし、
 
@@ -10,6 +10,50 @@
 - それらの背景・理由・注意点を説明する **ドキュメント**
 
 を明確に分離して整理しています。
+
+---
+
+## このリポジトリで学ぶ NLP の全体像
+
+本リポジトリは、**日本語 NLP 入門**として、  
+次のような段階構成を想定しています。
+
+### 1. テキストを「読む」
+
+- Google スプレッドシートから読む  
+- Google Drive 上のテキストファイルを読む  
+
+👉 入力データを **Python / Colab で扱える形にする**段階
+
+---
+
+### 2. テキストを「単語」に分解する（前処理）
+
+- 形態素解析（Janome / SudachiPy）
+- 文書 ID を保ったままトークン化
+
+👉 文章を **分析可能な最小単位（単語）**に分解
+
+---
+
+### 3. 単語の集まりとして文章を見る（Bag of Words）
+
+- 語頻度
+- WordCloud
+- BoW に基づく基本的な可視化・集計
+
+👉 **意味モデルに進む前の、最重要な基礎段階**
+
+---
+
+### 4. （今後追加予定）
+
+- TF-IDF
+- word2vec / doc2vec
+- 文書埋め込み・類似度・クラスタリング など
+
+👉 BoW の限界を理解したうえで、  
+**より高度な表現へ進むための足場**
 
 ---
 
@@ -30,6 +74,7 @@
 
 - 各テンプレ・関数の **背景・理由・注意点**
 - README を補完する man / 解説書相当
+- **コードを増やさず理解を補助するための資料**
 
 ---
 
@@ -47,7 +92,7 @@
 | 分類 | 内容 | 実装ファイル | 解説ドキュメント |
 |---|---|---|---|
 | 前処理 | 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
-| BoW / 可視化 | WordCloud 生成 | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md) |
+| Bag of Words | 語頻度・WordCloud | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/README.md`](./docs/bow/README.md) |
 | I/O | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
 
 ---
@@ -75,41 +120,24 @@ from libs import (
 
 ---
 
-## 分析パイプラインの位置づけ（概要）
+## 大規模テキストへの入口（テキスト I/O）
 
-本リポジトリで想定している典型的な分析の流れは、次のとおりです。
+Google スプレッドシートに載らない規模の文書群を扱うための  
+**最小構成のテキスト I/O** を以下で整理しています。
 
-```text
-Google Sheets
-    ↓（読み込みテンプレ）
-DataFrame
-    ↓（形態素解析：preprocess）
-tokens（1行＝1トークン）
-    ↓（Bag of Words 的整理）
-語頻度・WordCloud・TF-IDF など
-    ↓
-Google Sheets / 図表
-```
+- Google Drive のマウント
+- `with open` によるテキスト読み込み
 
-このうち、
-
-- **形態素解析**は「文章 → 単語」への変換
-- **Bag of Words（BoW）**は「単語集合として文章を捉える」考え方
-- **WordCloud / TF-IDF 等**は BoW に基づく具体的な分析・可視化手法
-
-という位置づけになります。
-
-👉 BoW の考え方や、本リポジトリ内での扱いについては  
-[`docs/bow/README.md`](./docs/bow/README.md) を参照してください。
+👉 [`docs/io_text_basic.md`](./docs/io_text_basic.md)
 
 ---
 
 ## 想定ユースケース
 
 - ゼミ・演習での日本語 NLP 入門
-- Google スプレッドシートを起点としたデータ分析
-- 形態素解析 → BoW → 可視化・集計
-- Colab 完結型の再現可能な分析パイプライン構築
+- スプレッドシート／テキストファイルを起点とした分析
+- 形態素解析 → Bag of Words → 可視化
+- Colab 完結型の再現可能な演習ノート作成
 
 ---
 

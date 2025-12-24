@@ -97,16 +97,15 @@ df_tok = tokenize_df(
 | `id_col` | `"article_id"` | 文書ID列名 | 入力列名が違うとき |
 | `text_col` | `"article"` | テキスト列名 | 入力列名が違うとき |
 | `engine` | `"sudachi"` | 解析エンジン選択 | Janome を使いたいとき |
+| `tokenize_text_fn` | `None` | 1テキスト→トークン列の関数を注入（高速化・カスタム） | 大規模処理／tokenizer使い回し／独自ルールを使うとき |
 | `stopwords` | `None` | 除外語集合（例：`{"する","なる"}`） | ノイズが多いとき |
 | `pos_keep` | `None` | 残す品詞（大分類）の集合（例：`{"名詞","動詞"}`） | 品詞で絞りたいとき |
 | `extra_col` | `"token_info"` | 追加情報列名。`None` で列自体を作らない | 軽量化したいとき |
-
 #### B. Janome オプション（`engine="janome"` のとき意味を持つ）
 
 | 引数 | 既定値 | 何をするか | 補足 |
 |---|---:|---|---|
-| `tokenizer` | `None` | Janome の Tokenizer を外から渡す | 大規模時に「使い回し」可能 |
-| `use_base_form` | `True` | 原形（base_form）を使う | `False` なら表層形 |
+| `use_base_form` | `True` | 原形（base_form）を使う（※高速化は tokenize_text_fn 側で行う） | `False` なら表層形 |
 
 #### C. SudachiPy オプション（`engine="sudachi"` のとき意味を持つ）
 
@@ -195,15 +194,62 @@ df_tok = tokenize_df(df, engine="sudachi", pos_keep={"名詞", "動詞", "形容
 
 ---
 
-### `tokenizer` を渡す（速度が必要なとき）
+### 高速化の基本は `tokenize_text_fn`（Janome / Sudachi 共通）
 
-Janome / Sudachi いずれも tokenizer 初期化にはコストがあります。  
-何度も同じ tokenizer を使う場合は、外で作って渡すと速くなります。
+Janome / Sudachi いずれも tokenizer の初期化にはコストがあります。  
+**多数の文書を処理する場合は、tokenizer を外で 1 回だけ作って使い回す**のが基本です。
 
-- `tokenize_df` で tokenizer を渡す  
-- さらに大規模なら `tokenize_text_fn` で注入する
+本リポジトリでは、そのための統一的な入口として `tokenize_text_fn` を用意しています。
 
-という段階的な選び方ができます。
+- `tokenize_df` は「使いやすい入口」
+- 高速化・カスタム（tokenizer 使い回し、独自ルール、前処理の差し替え等）は **`tokenize_text_fn` に寄せる**
+- これにより、Janome / Sudachi で「やり方が違う」混乱を避けられます
+
+#### 例：Janome tokenizer を使い回す
+
+```python
+from janome.tokenizer import Tokenizer
+from libs import tokenize_df, tokenize_text_janome
+
+tok = Tokenizer()
+
+df_tok = tokenize_df(
+    df,
+    id_col="article_id",
+    text_col="article",
+    tokenize_text_fn=lambda t: tokenize_text_janome(
+        t,
+        tokenizer=tok,
+        use_base_form=True,
+    ),
+    extra_col=None,   # 軽量化（必要なら戻す）
+)
+```
+
+#### 例：Sudachi tokenizer を使い回す（normalized）
+
+```python
+from sudachipy import Dictionary, SplitMode
+from libs import tokenize_df, tokenize_text_sudachi
+
+tok = Dictionary(dict="core").create(mode=SplitMode.C)
+
+df_tok = tokenize_df(
+    df,
+    id_col="article_id",
+    text_col="article",
+    tokenize_text_fn=lambda t: tokenize_text_sudachi(
+        t,
+        tokenizer=tok,
+        word_form="normalized",
+    ),
+    extra_col=None,   # 軽量化
+)
+```
+
+> 目安：授業・小規模なら `engine="janome"` / `engine="sudachi"` だけで十分です。  
+> 数万文書以上や繰り返し実行する場合に、`tokenize_text_fn` を検討してください。
+
 
 ## SudachiPy における語形の違い
 

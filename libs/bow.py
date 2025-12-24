@@ -14,6 +14,7 @@ except ImportError as e:
 
 def create_wordcloud(
     sentence,
+    font_path=None,
     stopwords=None,
     outfile="img.png",
     figsize=(10, 6),
@@ -27,8 +28,8 @@ def create_wordcloud(
 
     Notes
     -----
-    - font_path はグローバル変数として定義済みであること
-      （matplotlib 日本語フォント設定テンプレを事前に実行）
+    - font_path は、日本語フォントファイルのパスを指定すること
+      （例：matplotlib 日本語フォント設定テンプレで得たパスを渡す）
     """
 
     if WordCloud is None:
@@ -36,6 +37,12 @@ def create_wordcloud(
             "wordcloud がインストールされていません。\n"
             "Google Colab では次を実行してください:\n"
             "  !pip -q install wordcloud"
+        )
+
+    if font_path is None:
+        raise ValueError(
+            "font_path が未指定です。日本語フォントファイルのパスを font_path に渡してください。\n"
+            "例: create_wordcloud(sentence, font_path=font_path)"
         )
 
     if stopwords is None:

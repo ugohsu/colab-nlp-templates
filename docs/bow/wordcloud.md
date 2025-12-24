@@ -28,19 +28,18 @@ from libs import tokens_to_text, create_wordcloud
 ## 日本語フォント設定（必須）
 
 WordCloud で日本語を正しく表示するには、  
-**日本語フォントファイルのパスが `font_path` に正しく設定されている必要があります。**
+**日本語フォントファイルのパスを `font_path` として用意し、`create_wordcloud` に渡す必要があります。**
 
 - テンプレート（貼り付けて使う）  
   - [`templates/matplotlib_japanese_font.py`](../../templates/matplotlib_japanese_font.py)
 - 解説ドキュメント  
   - [`docs/matplotlib_japanese_font.md`](../matplotlib_japanese_font.md)
 
-👉 上記テンプレは、`font_path` を **グローバル変数として定義**することを目的としています。  
+👉 上記テンプレは、日本語フォントのパスを取得するための補助です。  
 ただし、環境によってはフォントパスの調整が必要になるため、
 
-- `font_path` が定義されているか
+- `font_path` が「日本語対応フォント」を指しているか
 - そのパスが実在するか
-- 日本語対応フォントを指しているか
 
 を **必ず確認**してください。
 
@@ -97,6 +96,7 @@ tokens_to_text(df, pos_keep=None)
 ```python
 create_wordcloud(
     sentence,
+    font_path=None,
     stopwords=None,
     outfile="img.png",
     figsize=(10, 6),
@@ -114,8 +114,8 @@ create_wordcloud(
 を行います。
 
 #### 重要な前提
-- `font_path` が **事前に定義されていること**
-  - 日本語フォント設定テンプレ、または同等の設定を先に行ってください
+- `font_path`（日本語フォントファイルのパス）を **引数として渡すこと**
+  - `font_path` を未指定のまま実行するとエラーになります
 
 ---
 
@@ -124,6 +124,11 @@ create_wordcloud(
 - `sentence`（必須）  
   分かち書き済みテキスト（`tokens_to_text` の出力）  
   - 空文字列や空白のみの場合はエラーになります
+
+- `font_path`（必須）  
+  日本語フォントファイルのパス（例：`/usr/share/fonts/.../NotoSansCJK-Regular.ttc`）  
+  - WordCloud は matplotlib のフォント設定とは独立して  
+    **フォントファイルパスを直接指定する必要があります**
 
 - `stopwords`（任意）  
   WordCloud から除外したい語の集合  
@@ -157,8 +162,12 @@ create_wordcloud(
 ```python
 sentence = tokens_to_text(tokens_df, pos_keep="名詞")
 
+# 事前に font_path を用意しておく（テンプレ等で取得したパス）
+print(font_path)
+
 create_wordcloud(
     sentence,
+    font_path=font_path,
     stopwords={"する", "ある", "いる"},
     outfile="wordcloud.png",
     background_color="white",
@@ -173,11 +182,9 @@ create_wordcloud(
 
 ### 日本語が表示されない
 
-- `font_path` が正しく設定されていない可能性があります  
+- `font_path` が日本語対応フォントを指していない可能性があります  
   - `print(font_path)` で確認してください
-- WordCloud は matplotlib のフォント設定とは独立して  
-  **フォントファイルパスを直接指定する必要があります**
-- 日本語非対応フォントの場合、□（豆腐）になります
+- パスが存在していても、日本語非対応フォントの場合は □（豆腐）になります
 
 ---
 

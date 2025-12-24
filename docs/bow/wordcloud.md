@@ -1,7 +1,7 @@
 # WordCloud を作成する（Bag of Words 可視化）
 
 本ドキュメントでは、本リポジトリの  
-[`libs/bow.py`](../libs/bow.py)  
+[`libs/bow.py`](../../libs/bow.py)  
 で提供している **WordCloud 作成用ユーティリティ**について説明します。
 
 WordCloud は、形態素解析後の **Bag of Words（BoW）表現**を可視化する代表的な手法であり、  
@@ -11,7 +11,7 @@ WordCloud は、形態素解析後の **Bag of Words（BoW）表現**を可視�
 
 ## 最小構成での使い方（Colab・ワンコピペ）
 
-以下のセルを **そのまま上から順に 1 回ずつ実行**してください。
+以下のセルを **そのまま 1 回実行**してください。
 
 ```python
 !pip install wordcloud
@@ -28,22 +28,28 @@ from libs import tokens_to_text, create_wordcloud
 ## 日本語フォント設定（必須）
 
 WordCloud で日本語を正しく表示するには、  
-**事前に日本語フォント設定テンプレを実行する必要があります。**
+**日本語フォントファイルのパスを `font_path` に指定できている必要があります。**
 
-- テンプレート  
-  - [`templates/matplotlib_japanese_font.py`](../templates/matplotlib_japanese_font.py)
+- テンプレート（貼り付けて使う）  
+  - [`templates/matplotlib_japanese_font.py`](../../templates/matplotlib_japanese_font.py)
 - 解説ドキュメント  
-  - [`docs/matplotlib_japanese_font.md`](./matplotlib_japanese_font.md)
+  - [`docs/matplotlib_japanese_font.md`](../matplotlib_japanese_font.md)
 
-👉 上記テンプレを実行すると、  
-`font_path` が **グローバル変数として定義**され、  
-`create_wordcloud` 関数から参照されます。
+👉 上記テンプレは、（Colab ノートブック上で）`font_path` を **グローバル変数として定義**し、  
+`create_wordcloud` 関数から参照される設計です。
+
+> 注意：このテンプレは、環境によってパスの調整が必要になる可能性があります。  
+> 「実行すれば必ず動く」とは限らないため、**必ず `font_path` が正しいフォントを指しているか確認**してください。
+
+### `font_path` の確認（強く推奨）
+
+- `font_path` が定義されているか
+- そのパスが実在するか
+- 指しているフォントで日本語が表示できるか
+
+最低限、次が通ることを確認してください：
 
 ```python
-# ★必須：日本語フォント設定
-%run /content/colab-nlp-templates/templates/matplotlib_japanese_font.py
-
-# 確認（これが表示されれば OK）
 print(font_path)
 ```
 
@@ -118,7 +124,7 @@ create_wordcloud(
 
 #### 重要な前提
 - `font_path` が **事前に定義されていること**
-  - 日本語フォント設定テンプレを先に実行してください
+  - 日本語フォント設定テンプレ（または同等の設定）を先に行ってください
   - `print(font_path)` が通ることを確認してください
 
 #### 主な引数
@@ -163,10 +169,11 @@ create_wordcloud(
 
 ### 日本語が表示されない
 
-- 日本語フォント設定テンプレが **未実行**の可能性があります  
-- `font_path` が定義されているか、`print(font_path)` で確認してください
+- `font_path` が正しく設定されていない可能性があります  
+  - まず `print(font_path)` を確認してください
 - WordCloud は matplotlib のフォント設定とは独立して  
   **font_path を直接指定する必要があります**
+- パスが存在していても、日本語非対応フォントだと □（豆腐）になります
 
 ---
 
@@ -189,6 +196,6 @@ create_wordcloud(
 ## 関連ドキュメント
 
 - 形態素解析  
-  - [`docs/tokenization.md`](./tokenization.md)
+  - [`docs/tokenization.md`](../tokenization.md)
 - 日本語フォント設定  
-  - [`docs/matplotlib_japanese_font.md`](./matplotlib_japanese_font.md)
+  - [`docs/matplotlib_japanese_font.md`](../matplotlib_japanese_font.md)

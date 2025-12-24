@@ -24,12 +24,13 @@
 ### libs（import して使う）
 
 - リポジトリを clone した後、**import して使用**
-- ゼミ内で共通利用する前処理・関数群
+- ゼミ内で共通利用する前処理・入出力関数群
+- 分析パイプラインの中核となる処理を集約
 
 ### docs（解説）
 
 - 各テンプレ・関数の **背景・理由・注意点**
-- 「なぜこの設定が必要か」を説明する man / README 相当
+- 「なぜこの設定が必要か」「どう使うべきか」を説明する man / README 相当
 
 ---
 
@@ -47,11 +48,15 @@
 | 内容 | 実装ファイル | 解説ドキュメント |
 |---|---|---|
 | 形態素解析（Janome / SudachiPy） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
+| Google スプレッドシート書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
 
 ### 提供関数
 
-- `tokenize_janome`
-- `tokenize_sudachi`
+- 前処理  
+  - `tokenize_janome`  
+  - `tokenize_sudachi`
+- 出力  
+  - `write_df_to_gsheet`
 
 ---
 
@@ -63,11 +68,34 @@
 import sys
 sys.path.append("/content/colab-nlp-templates")
 
-from libs import tokenize_janome, tokenize_sudachi
+from libs import (
+    tokenize_janome,
+    tokenize_sudachi,
+    write_df_to_gsheet,
+)
 ```
 
-※ 必要なライブラリ（Janome / SudachiPy）の install 方法や  
+※ 形態素解析に必要なライブラリ（Janome / SudachiPy）の install 方法や  
 　どちらを選ぶべきかは [`docs/tokenization.md`](./docs/tokenization.md) を参照してください。
+
+※ Google スプレッドシートへの書き込みには、  
+　事前に認証・`gc` 作成が必要です。  
+　詳細は [`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md) を参照してください。
+
+---
+
+## 典型的な利用フロー（Colab）
+
+1. **スプレッドシートを読み込む**  
+   - `templates/load_google_spreadsheet.py`
+2. **前処理・形態素解析を行う**  
+   - `tokenize_janome` / `tokenize_sudachi`
+3. **結果をスプレッドシートに書き戻す**  
+   - `write_df_to_gsheet`
+
+この流れにより、  
+**Colab → 分析 → Google Sheets**  
+という一連の作業を Colab 上で完結できます。
 
 ---
 
@@ -76,6 +104,7 @@ from libs import tokenize_janome, tokenize_sudachi
 - ゼミ・演習での日本語 NLP 入門
 - Google スプレッドシートを起点としたデータ分析
 - 形態素解析 → BoW / TF-IDF / トピックモデル
+- 分析結果の Google Sheets への保存・共有
 - 教育用途を意識した再現性のある Colab ノートブック作成
 
 ---

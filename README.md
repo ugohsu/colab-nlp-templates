@@ -53,7 +53,7 @@
 
 ---
 
-## 関数群（libs）の基本的な使い方
+## 関数群（libs）の基本的な使い方 (例)
 
 ```python
 !git clone https://github.com/ugohsu/colab-nlp-templates.git
@@ -88,55 +88,110 @@ from libs import (
 
 ## このリポジトリで学ぶ NLP の全体像
 
-本リポジトリでは、**データの規模に応じた入力方法**から始め、  
+本リポジトリでは、**データの読み込み方法**から始め、  
 前処理 → Bag of Words → 可視化・出力という  
-**王道的な日本語 NLP 分析パイプライン**を段階的に学びます。
+**日本語 NLP 分析パイプライン**を段階的に学びます。
 
 ### 1. テキストデータの取得
 
-- **小規模データ（授業・演習向け）**  
-  Google スプレッドシートを入力データとして使用します。  
-  少量の文書を手軽に扱え、前処理や分析結果の確認に向いています。  
-
-  → [`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md)
-
-- **大規模データ（研究・発展向け）**  
-  ディレクトリ配下に配置された多数のテキストファイルを対象に、  
-  **1パス目処理**として形態素解析結果を jsonl 形式で保存します。  
-  これにより、全文書をメモリに載せずに分析を進められます。  
-
-  → [`docs/io_text_corpus_pass1.md`](./docs/io_text_corpus_pass1.md)
-
+- スプレッドシートによる入出力
+    - Google スプレッドシートをテキストの入力データとして使用します ([`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md))。
+    - pandas データフレーム形式で読み込みます。どのような表形式でも読み込み可能ですが、このプロジェクトでは、id 列と文書列がある表の読み込みを想定しています。
+    <!-- - データフレーム → Google スプレッドシートの出力については関数を用意しています ([`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md)) -->
+    - 少量の文書を手軽に扱え、前処理や分析結果の確認に向いています。
+- プレーンテキストの読み込み
+    - Google ドライブのマウント方法やファイルの読み込み方法について、[`docs/io_text_basic.md`](./docs/io_text_basic.md) にまとめています。
+    - スプレッドシート読み書きラッパーよりも基礎的な方法なので、大規模データの処理などの発展的な内容に応用しやすいです。
+    
 ### 2. 前処理（形態素解析）
 
-日本語テキストを解析し、  
-「1行 = 1トークン」の縦持ち DataFrame に変換します。  
-
-- Janome（軽量・授業向け）
-- SudachiPy（高精度・研究向け）
+- 日本語テキストの形態素解析
+    - 日本語文を単語（トークン）に分割し、  
+      「**1行 = 1トークン**」の縦持ち DataFrame に変換します。
+    - Janome（軽量・授業向け）と SudachiPy（高精度・研究向け）の  
+      2 種類の形態素解析器に対応しています。
+    - 解析結果は、語・品詞・付加情報（token_info）を列として保持します。
+- 分析パイプラインの基盤
+    - 以降の BoW、語頻度分析、WordCloud などは、  
+      この形態素解析結果を前提として進みます。
+    - 小規模データから研究用途まで、同じ形式で扱える設計です。
 
 → [`docs/tokenization.md`](./docs/tokenization.md)
 
+---
+
 ### 3. Bag of Words（BoW）
 
-形態素解析結果をもとに、  
-文章を「単語の集合」として数値化・可視化します。
+- BoW の考え方と位置づけ
+    - 文書を「単語の集合」として表現し、  
+      出現頻度や分布にもとづいて文章を数値化します。
+    - 日本語 NLP の基礎となる表現方法です。
+- 基本的な分析と可視化
+    - 単語の出現頻度を集計し、  
+      文書全体やコーパス全体の特徴を把握します。
+    - WordCloud による可視化で、  
+      テキストの傾向を直感的に確認できます。
+- 教育・演習向けの最小構成
+    - pandas ベースの実装で、  
+      処理の流れを追いやすい構成になっています。
 
-- **BoW 総論・位置づけ**  
+- BoW 総論・位置づけ  
   → [`docs/bow/README.md`](./docs/bow/README.md)
 
-- **語頻度分析（最小構成）**  
+- 語頻度分析（最小構成）  
   → [`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md)
 
-- **WordCloud による可視化**  
+- WordCloud による可視化  
   → [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md)
+
+---
 
 ### 4. 出力・共有
 
-分析結果を Google スプレッドシートへ書き戻し、  
-共有・配布・二次利用を可能にします。
+- 分析結果の書き戻し
+    - 形態素解析結果や BoW の集計結果を、  
+      pandas DataFrame として扱います。
+    - DataFrame を Google スプレッドシートへ  
+      書き戻すための関数を用意しています。
+- 共有・配布を前提とした設計
+    - スプレッドシート形式で出力することで、  
+      結果の確認・共有・再利用が容易になります。
+    - 授業での配布、レポート作成、  
+      二次分析への接続を想定しています。
 
 → [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md)
+
+
+<!-- ### 2. 前処理（形態素解析） -->
+
+<!-- 日本語テキストを解析し、   -->
+<!-- 「1行 = 1トークン」の縦持ち DataFrame に変換します。   -->
+
+<!-- - Janome（軽量・授業向け） -->
+<!-- - SudachiPy（高精度・研究向け） -->
+
+<!-- → [`docs/tokenization.md`](./docs/tokenization.md) -->
+
+<!-- ### 3. Bag of Words（BoW） -->
+
+<!-- 形態素解析結果をもとに、   -->
+<!-- 文章を「単語の集合」として数値化・可視化します。 -->
+
+<!-- - **BoW 総論・位置づけ**   -->
+<!--   → [`docs/bow/README.md`](./docs/bow/README.md) -->
+
+<!-- - **語頻度分析（最小構成）**   -->
+<!--   → [`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md) -->
+
+<!-- - **WordCloud による可視化**   -->
+<!--   → [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md) -->
+
+<!-- ### 4. 出力・共有 -->
+
+<!-- 分析結果を Google スプレッドシートへ書き戻し、   -->
+<!-- 共有・配布・二次利用を可能にします。 -->
+
+<!-- → [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) -->
 
 ---
 

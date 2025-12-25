@@ -36,7 +36,6 @@ def tokenize_text_janome(
     use_base_form: bool = True,
     pos_keep: Optional[Iterable[str]] = None,
     pos_exclude: Optional[Iterable[str]] = None,
-    pos_exclude: Optional[Iterable[str]] = None,
     stopwords: Optional[set[str]] = None,
     extra_info: bool = True,
 ) -> list[TokenRecord]:
@@ -85,14 +84,11 @@ def tokenize_text_janome(
     stopwords = stopwords or set()
     pos_keep_set = set(pos_keep) if pos_keep is not None else None
     pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
-    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
 
     out: list[TokenRecord] = []
     for tok in t.tokenize(text):
         pos = tok.part_of_speech.split(",")[0]
         if pos_keep_set is not None and pos not in pos_keep_set:
-            continue
-        if pos_exclude_set is not None and pos in pos_exclude_set:
             continue
         if pos_exclude_set is not None and pos in pos_exclude_set:
             continue
@@ -126,7 +122,6 @@ def tokenize_text_sudachi(
     tokenizer=None,
     word_form: WordForm = "dictionary",
     pos_keep: Optional[Iterable[str]] = None,
-    pos_exclude: Optional[Iterable[str]] = None,
     pos_exclude: Optional[Iterable[str]] = None,
     stopwords: Optional[set[str]] = None,
     extra_info: bool = True,
@@ -181,7 +176,6 @@ def tokenize_text_sudachi(
     stopwords = stopwords or set()
     pos_keep_set = set(pos_keep) if pos_keep is not None else None
     pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
-    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
 
     if tokenizer is None:
         dic = Dictionary(dict=dict_type)
@@ -199,8 +193,6 @@ def tokenize_text_sudachi(
         pos_tuple = m.part_of_speech()
         pos = pos_tuple[0]
         if pos_keep_set is not None and pos not in pos_keep_set:
-            continue
-        if pos_exclude_set is not None and pos in pos_exclude_set:
             continue
         if pos_exclude_set is not None and pos in pos_exclude_set:
             continue
@@ -244,7 +236,6 @@ def tokenize_df(
     # 共通オプション
     stopwords: Optional[set[str]] = None,
     pos_keep: Optional[Iterable[str]] = None,
-    pos_exclude: Optional[Iterable[str]] = None,
     pos_exclude: Optional[Iterable[str]] = None,
     extra_col: Optional[str] = "token_info",
     # Janome 固有オプション（※tokenizer 注入は tokenize_text_fn に寄せる）
@@ -300,7 +291,6 @@ def tokenize_df(
 
     stopwords = stopwords or set()
     pos_keep_set = set(pos_keep) if pos_keep is not None else None
-    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
     pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
     # extra_col が無いなら info を作らない（無駄なので）
     want_info = bool(extra_info) and (extra_col is not None)
@@ -385,15 +375,27 @@ def tokens_to_text(
     *,
     pos_keep: Optional[Iterable[str]] = None,
     pos_exclude: Optional[Iterable[str]] = None,
-    pos_exclude: Optional[Iterable[str]] = None,
 ) -> str:
     """
     形態素解析結果（縦持ち DataFrame）を、スペース区切りの文字列に戻します。
 
     WordCloud 等で「トークン列→文字列」が必要なときに使います。
     """
-    if pos_keep is None:
-        return " ".join(df["word"].dropna().astype(str))
-    if isinstance(pos_keep, str):
-        pos_keep = (pos_keep,)
-    return " ".join(df.query("pos in @pos_keep")["word"].dropna().astype(str))
+    if "word" not in df.columns or "pos" not in df.columns:
+        raise KeyError("df must have 'word' and 'pos' columns")
+
+    s = df
+
+    # 先に pos_keep（許可リスト）を適用
+    if pos_keep is not None:
+        if isinstance(pos_keep, str):
+            pos_keep = (pos_keep,)
+        s = s[s["pos"].isin(list(pos_keep))]
+
+    # 次に pos_exclude（拒否リスト）を適用（pos_keep と併用可）
+    if pos_exclude is not None:
+        if isinstance(pos_exclude, str):
+            pos_exclude = (pos_exclude,)
+        s = s[~s["pos"].isin(list(pos_exclude))]
+
+    return " ".join(s["word"].dropna().astype(str))

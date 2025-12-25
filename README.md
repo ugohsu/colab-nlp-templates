@@ -122,44 +122,44 @@ from libs import (
 
 ### 3. Bag of Words（BoW）
 
-- BoW の考え方と位置づけ
-    - 文書を「単語の集合」として表現し、  
-      出現頻度や分布にもとづいて文章を数値化します。
-    - 日本語 NLP の基礎となる表現方法です。
-- 基本的な分析と可視化
-    - 単語の出現頻度を集計し、  
-      文書全体やコーパス全体の特徴を把握します。
-    - WordCloud による可視化で、  
-      テキストの傾向を直感的に確認できます。
-- 教育・演習向けの最小構成
-    - pandas ベースの実装で、  
-      処理の流れを追いやすい構成になっています。
-
-- BoW 総論・位置づけ  
-  → [`docs/bow/README.md`](./docs/bow/README.md)
-
-- 語頻度分析（最小構成）  
-  → [`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md)
-
-- WordCloud による可視化  
-  → [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md)
+- 内容
+    - BoW の考え方と位置づけ
+        - 文書を「単語の集合」として表現し、  
+        出現頻度や分布にもとづいて文章を数値化します。
+        - 日本語 NLP の基礎となる表現方法です。
+    - 基本的な分析と可視化
+        - 単語の出現頻度を集計し、  
+        文書全体やコーパス全体の特徴を把握します。
+        - WordCloud による可視化で、  
+        テキストの傾向を直感的に確認できます。
+    - 教育・演習向けの最小構成
+        - pandas ベースの実装で、  
+        処理の流れを追いやすい構成になっています。
+- 参考資料
+    - BoW 総論・位置づけ
+        - [`docs/bow/README.md`](./docs/bow/README.md)
+    - 語頻度分析（最小構成
+        - [`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md)
+    - WordCloud による可視化
+        - [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md)
 
 ---
 
 ### 4. 出力・共有
 
-- 分析結果の書き戻し
-    - 形態素解析結果や BoW の集計結果を、  
-      pandas DataFrame として扱います。
-    - DataFrame を Google スプレッドシートへ  
-      書き戻すための関数を用意しています。
-- 共有・配布を前提とした設計
-    - スプレッドシート形式で出力することで、  
-      結果の確認・共有・再利用が容易になります。
-    - 授業での配布、レポート作成、  
-      二次分析への接続を想定しています。
-
-→ [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md)
+- 内容
+    - 分析結果の書き戻し
+        - 形態素解析結果や BoW の集計結果を、  
+        pandas DataFrame として扱います。
+        - DataFrame を Google スプレッドシートへ  
+        書き戻すための関数を用意しています。
+    - 共有・配布を前提とした設計
+        - スプレッドシート形式で出力することで、  
+        結果の確認・共有・再利用が容易になります。
+        - 授業での配布、レポート作成、  
+        二次分析への接続を想定しています。
+- 参考資料
+    - [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md)
 
 
 <!-- ### 2. 前処理（形態素解析） -->

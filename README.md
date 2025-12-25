@@ -47,6 +47,7 @@
 | 分類 | 内容 | 実装ファイル | 解説ドキュメント |
 |---|---|---|---|
 | 前処理 | 形態素解析（Janome / SudachiPy：tokenize_df） | [`libs/preprocess.py`](./libs/preprocess.py) | [`docs/tokenization.md`](./docs/tokenization.md) |
+| I/O | フォルダ配下のテキスト→DataFrame（build_text_df） | [`libs/io_text.py`](./libs/io_text.py) | [`docs/io_text_basic.md`](./docs/io_text_basic.md) |
 | BoW / 可視化 | 語頻度・WordCloud | [`libs/bow.py`](./libs/bow.py) | [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md) |
 | I/O | Google Sheets 書き込み | [`libs/gsheet_io.py`](./libs/gsheet_io.py) | [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) |
 | 大規模テキスト | コーパス1パス目処理（jsonl 出力） | [`libs/corpus_pass1.py`](./libs/corpus_pass1.py) | [`docs/io_text_corpus_pass1.md`](./docs/io_text_corpus_pass1.md) |
@@ -73,6 +74,7 @@ sys.path.append("/content/colab-nlp-templates")
 
 from libs import (
     tokenize_df,
+    build_text_df,
     tokens_to_text,
     create_wordcloud,
     write_df_to_gsheet,
@@ -100,6 +102,7 @@ from libs import (
     - 少量の文書を手軽に扱え、前処理や分析結果の確認に向いています。
 - プレーンテキストの読み込み
     - Google ドライブのマウント方法やファイルの読み込み方法について、[`docs/io_text_basic.md`](./docs/io_text_basic.md) にまとめています。
+    - 文書数が多い場合は、フォルダ配下の `.txt` をまとめて読み込み、(id 列 + 文書列) 形式の DataFrame を自動生成する `build_text_df` を利用できます。
     - スプレッドシート読み書きラッパーよりも基礎的な方法であり、大規模データの処理などの発展的な内容に応用しやすいです。
 
 ---

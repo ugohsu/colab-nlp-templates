@@ -1,17 +1,17 @@
-# Google Colab でテキストファイルを読む（最小構成）
+# テキスト入出力（基本）
 
 このドキュメントでは、Google Colab 上で  
-**Google Drive に保存されたテキストファイル（.txt）を読み込む**
-ための最小構成の手順を説明します。
+**プレーンテキスト（.txt など）を読み込むための基本的な方法**をまとめます。
 
-大量の文書データを扱う前提として、  
-まずは **1つのテキストファイルを確実に読む** ことを目標にします。
+- まずは、Python の基本的な方法で **1つのテキストファイルを確実に読む**
+- 次に、近年よく使われる **別の書き方（pathlib）** を紹介します
+- そのうえで、文書数が増えた場合に役立つ **発展的な方法**へと進みます
 
 ---
 
-## 1. Google Drive を Colab にマウントする
+## 1. Google Drive をマウントする（Colab）
 
-Google Drive 上のファイルを Colab から扱うためには、
+Google Drive 上のファイルを読み込む場合は、  
 最初に Drive をマウントします。
 
 ```python
@@ -19,89 +19,167 @@ from google.colab import drive
 drive.mount("/content/drive")
 ```
 
-実行すると、Google アカウントへのログインが求められます。  
-認証が完了すると、Drive の中身が Colab から見えるようになります。
+マウント後、Google Drive 内のファイルは次のようなパスで参照できます。
+
+- `/content/drive/MyDrive/...`
 
 ---
 
-## 2. テキストファイルの場所を確認する
+## 2. ファイルの場所を確認する
 
-Drive をマウントすると、  
-`/content/drive/MyDrive/` 以下が Google Drive のルートになります。
+たとえば、Google Drive 上に次のようなファイルがあるとします。
 
-例：
-
-```text
-/content/drive/MyDrive/data/sample.txt
+```
+MyDrive/
+ └─ data/
+     └─ sample.txt
 ```
 
-ここでは、この `sample.txt` を読み込むとします。
+このファイルは、次のパスで参照できます。
+
+```python
+file_path = "/content/drive/MyDrive/data/sample.txt"
+```
 
 ---
 
-## 3. with open を使ってテキストを読む
+## 3. with open を使ってテキストを読む（基本）
 
-Python では、`with open` を使ってテキストファイルを読みます。
+Python でファイルを読み込む最も基本的な方法は、  
+`with open` を使う方法です。
 
 ```python
 file_path = "/content/drive/MyDrive/data/sample.txt"
 
-with open(file_path, encoding="utf-8") as f:
+with open(file_path, "r", encoding="utf-8") as f:
     text = f.read()
 ```
 
-### 各行の意味
+この方法は、
 
-- `file_path`  
-  読み込みたいテキストファイルのパス
+- 追加のライブラリが不要
+- Python の基本構文だけで理解できる
 
-- `encoding="utf-8"`  
-  日本語テキストを正しく読むために指定します
+という点で、**最初に学ぶ方法として適しています**。
 
-- `f.read()`  
-  ファイル全体を **1つの文字列** として読み込みます
+### 文字コードについて
 
----
+日本語テキストでは、文字コードの違いによって  
+エラーや文字化けが起こることがあります。
 
-## 4. 読み込んだ内容を確認する
-
-```python
-print(text[:300])
-```
-
-先頭の一部を表示して、  
-正しく読み込めているかを確認します。
-
----
-
-## 5. よくある注意点
-
-### 文字化けする場合
-
-- `encoding="utf-8"` が指定されているか確認してください
-- 古いテキストでは `"shift_jis"` が使われている場合もあります
+その場合は、`errors="replace"` を指定すると、  
+エラーで止まらずに読み込むことができます。
 
 ```python
-with open(file_path, encoding="shift_jis") as f:
+with open(file_path, "r", encoding="utf-8", errors="replace") as f:
     text = f.read()
 ```
 
 ---
 
-### FileNotFoundError が出る場合
+## 4. pathlib を使ってテキストを読む（別の書き方）
 
-- パスが正しいか確認してください
-- Drive のマウントが完了しているか確認してください
+`with open` による読み込みは、Python の基本的な方法です。  
+一方で、近年の Python では **`pathlib`** を使って  
+より簡潔にファイルを扱う書き方もよく使われます。
+
+### pathlib とは
+
+`pathlib` は、ファイルパスを **オブジェクトとして扱う**ための  
+Python 標準ライブラリです。
+
+```python
+from pathlib import Path
+```
+
+### pathlib を使った読み込み例
+
+```python
+from pathlib import Path
+
+file_path = Path("/content/drive/MyDrive/data/sample.txt")
+
+text = file_path.read_text(encoding="utf-8")
+```
+
+このコードは、次の `with open` の処理とほぼ同じ意味です。
+
+```python
+with open(file_path, "r", encoding="utf-8") as f:
+    text = f.read()
+```
+
+### どちらを使えばよいか
+
+- **Python の基本を学ぶ目的**  
+  → `with open` を使う
+- **コードを簡潔に書きたい場合**  
+  → `pathlib` を使う
+
+本リポジトリの内部実装（関数）では、  
+簡潔さと可読性の観点から `pathlib` を使うことがありますが、  
+どちらを使っても問題ありません。
 
 ---
 
-## まとめ
+## 5. 読み込んだ内容を確認する
 
-このドキュメントでは、以下を行いました。
+読み込んだテキストの中身は、`print` などで確認できます。
 
-- Google Drive を Colab にマウントする
-- Drive 上のテキストファイルの場所を指定する
-- `with open` を使ってテキストを読む
+```python
+print(text[:200])
+```
 
-この手順ができれば、  
-複数ファイルの読み込みや、大量文書の処理に進む準備が整います。
+長い文章の場合は、先頭の一部だけを表示すると確認しやすくなります。
+
+---
+
+## 6. （発展）フォルダ配下のテキストをまとめて DataFrame にする
+
+前節までで、「1つのテキストファイルを確実に読む」ことができました。  
+次のステップとして、スプレッドシート（id 列 + 文書列）を  
+手で用意する代わりに、
+
+**フォルダに置いた複数のテキストファイルから  
+自動で DataFrame を作る**
+
+方法もあります。
+
+このリポジトリでは、そのための関数 `build_text_df` を用意しています。
+
+- 指定ディレクトリ配下（必要ならサブディレクトリ含む）を走査
+- 指定拡張子のファイルをすべて読み込み
+- **1ファイル = 1文書**として、(id, 文書) 形式の DataFrame を作成
+
+### 最小例（.txt をすべて読む）
+
+```python
+!git clone https://github.com/ugohsu/colab-nlp-templates.git
+
+import sys
+sys.path.append("/content/colab-nlp-templates")
+
+from libs import build_text_df
+
+ROOT_DIR = "/content/drive/MyDrive/data"
+
+df = build_text_df(
+    ROOT_DIR,
+    exts=(".txt",),
+)
+```
+
+この DataFrame は、最低限次の列を持ちます。
+
+- `article_id`（文書ID）
+- `article`（本文）
+
+加えて、確認用に次の列も作られます。
+
+- `path`（フルパス）
+- `relpath`（ROOT_DIR からの相対パス）
+
+
+> 目安：授業・小規模データでは、  
+> まずは「with open」で 1本読むところまで理解できれば十分です。  
+> 文書数が増えてきたら、この `build_text_df` を使うとスムーズです。

@@ -5,6 +5,8 @@ from .preprocess import (
     tokens_to_text,
 )
 
+from .io_text import build_text_df
+
 from .gsheet_io import write_df_to_gsheet
 from .bow import create_wordcloud
 
@@ -23,10 +25,13 @@ __all__ = [
     # ユーティリティ
     "tokens_to_text",
 
+    # テキスト入出力（基本）
+    "build_text_df",
+
     # BoW / 可視化
     "create_wordcloud",
 
-    # I/O
+    # I/O（スプレッドシート）
     "write_df_to_gsheet",
 
     # 大規模テキスト処理（corpus 1パス目）

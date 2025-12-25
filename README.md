@@ -94,10 +94,9 @@ from libs import (
 
 ### 1. テキストデータの取得
 
-- スプレッドシートによる入出力
+- スプレッドシートによる入力
     - Google スプレッドシートをテキストの入力データとして使用します ([`docs/load_google_spreadsheet.md`](./docs/load_google_spreadsheet.md))。
     - pandas データフレーム形式で読み込みます。どのような表形式でも読み込み可能ですが、このプロジェクトでは、id 列と文書列がある表の読み込みを想定しています。
-    <!-- - データフレーム → Google スプレッドシートの出力については関数を用意しています ([`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md)) -->
     - 少量の文書を手軽に扱え、前処理や分析結果の確認に向いています。
 - プレーンテキストの読み込み
     - Google ドライブのマウント方法やファイルの読み込み方法について、[`docs/io_text_basic.md`](./docs/io_text_basic.md) にまとめています。
@@ -161,38 +160,6 @@ from libs import (
         二次分析への接続を想定しています。
 - 参考資料
     - [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md)
-
-
-<!-- ### 2. 前処理（形態素解析） -->
-
-<!-- 日本語テキストを解析し、   -->
-<!-- 「1行 = 1トークン」の縦持ち DataFrame に変換します。   -->
-
-<!-- - Janome（軽量・授業向け） -->
-<!-- - SudachiPy（高精度・研究向け） -->
-
-<!-- → [`docs/tokenization.md`](./docs/tokenization.md) -->
-
-<!-- ### 3. Bag of Words（BoW） -->
-
-<!-- 形態素解析結果をもとに、   -->
-<!-- 文章を「単語の集合」として数値化・可視化します。 -->
-
-<!-- - **BoW 総論・位置づけ**   -->
-<!--   → [`docs/bow/README.md`](./docs/bow/README.md) -->
-
-<!-- - **語頻度分析（最小構成）**   -->
-<!--   → [`docs/bow/term_frequency.md`](./docs/bow/term_frequency.md) -->
-
-<!-- - **WordCloud による可視化**   -->
-<!--   → [`docs/bow/wordcloud.md`](./docs/bow/wordcloud.md) -->
-
-<!-- ### 4. 出力・共有 -->
-
-<!-- 分析結果を Google スプレッドシートへ書き戻し、   -->
-<!-- 共有・配布・二次利用を可能にします。 -->
-
-<!-- → [`docs/write_google_spreadsheet.md`](./docs/write_google_spreadsheet.md) -->
 
 ---
 

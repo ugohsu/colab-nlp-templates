@@ -7,7 +7,11 @@ from .preprocess import (
 
 from .io_text import build_text_df
 
-from .gsheet_io import write_df_to_gsheet
+from .gsheet_io import (
+    write_df_to_gsheet,
+    get_gspread_client_colab,
+)
+
 from .bow import create_wordcloud
 
 from .corpus_pass1 import (
@@ -28,11 +32,12 @@ __all__ = [
     # テキスト入出力（基本）
     "build_text_df",
 
-    # BoW / 可視化
-    "create_wordcloud",
-
     # I/O（スプレッドシート）
     "write_df_to_gsheet",
+    "get_gspread_client_colab",
+
+    # BoW / 可視化
+    "create_wordcloud",
 
     # 大規模テキスト処理（corpus 1パス目）
     "process_manifest_to_jsonl",

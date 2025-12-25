@@ -23,10 +23,7 @@ Google スプレッドシートに書き込めます。
 ```python
 from libs import write_df_to_gsheet
 
-write_df_to_gsheet(
-    df,
-    SHEET_URL,
-)
+write_df_to_gsheet(df, SHEET_URL)
 ```
 
 - `gc`（gspread client）は **省略可能**です  

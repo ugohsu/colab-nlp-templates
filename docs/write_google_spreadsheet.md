@@ -24,8 +24,8 @@ Google スプレッドシートに書き込めます。
 from libs import write_df_to_gsheet
 
 write_df_to_gsheet(
-    sheet_url=SHEET_URL,
-    df=df,
+    df,
+    SHEET_URL,
 )
 ```
 
@@ -48,9 +48,9 @@ from libs import get_gspread_client_colab, write_df_to_gsheet
 gc = get_gspread_client_colab()
 
 write_df_to_gsheet(
+    df,
+    SHEET_URL,
     gc=gc,
-    sheet_url=SHEET_URL,
-    df=df,
 )
 ```
 
@@ -63,8 +63,8 @@ write_df_to_gsheet(
 
 ```python
 write_df_to_gsheet(
-    sheet_url=SHEET_URL,
-    df=df,
+    df,
+    SHEET_URL,
     sheet_name="result",
 )
 ```
@@ -81,8 +81,8 @@ write_df_to_gsheet(
 pos_counts = df_tok["pos"].value_counts()
 
 write_df_to_gsheet(
-    sheet_url=SHEET_URL,
-    df=pos_counts,
+    pos_counts,
+    SHEET_URL,
 )
 ```
 

@@ -10,6 +10,78 @@
 
 ---
 
+---
+
+## クイックスタート（gc を 1 行で準備）
+> ✅ `write_df_to_gsheet` は `gc` を省略できます（Colab 前提で自動認証します）。
+> 何度も書き込む場合は、`gc = get_gspread_client_colab()` で一度だけ用意して渡すのがおすすめです。
+
+
+`gc`（認証済み gspread client）を毎回コピペで用意するのが面倒な場合は、  
+次の 1 行で準備できます（Colab 前提）。
+
+```python
+%run /content/colab-nlp-templates/tools/gsheet_quickstart.py
+```
+
+実行後は次が利用できます。
+
+- `gc` : 認証済み gspread client
+- `write_df(df, sheet_url, sheet_name="temporary")` : 簡易書き込みラッパ
+
+> `write_df` は内部で `write_df_to_gsheet` を呼び出しています。
+
+---
+
+## シート名（sheet_name）の既定値
+
+「とりあえず df の中身を確認したい」用途を想定し、  
+`write_df_to_gsheet` の `sheet_name` は既定で `"temporary"` になっています。
+
+```python
+from libs import write_df_to_gsheet
+
+write_df_to_gsheet(
+    sheet_url=SHEET_URL,
+    df=df,
+    # gc は省略可（Colab 前提で自動認証）
+    # sheet_name は省略可（既定 "temporary"）
+)
+
+# 何度も書くなら、gc を 1 回だけ作って渡す
+from libs.gsheet_io import get_gspread_client_colab
+
+gc = get_gspread_client_colab()
+write_df_to_gsheet(gc=gc, sheet_url=SHEET_URL, df=df)
+```
+
+---
+
+## value_counts() の結果（Series）もそのまま書けます
+
+`df["pos"].value_counts()` のような **Series** を書き込むときに、  
+`reset_index()` を忘れてエラーになることがあります。
+
+本リポジトリの `write_df_to_gsheet` は、既定で **自動整形（normalize=True）** を行うため、  
+Series をそのまま渡しても書き込みできます。
+
+```python
+pos_counts = df_tok["pos"].value_counts()
+
+write_df_to_gsheet(
+    gc=gc,
+    sheet_url=SHEET_URL,
+    df=pos_counts,  # Series OK
+)
+```
+
+- Series → DataFrame への変換
+- reset_index の自動適用（include_index=False のとき）
+- 列名の補完（重複解消・MultiIndex のフラット化を含む）
+
+を行ってから書き込みます。
+
+
 ## 最小構成での使い方（Colab）
 
 この関数を使うために **最低限必要な手順**は次のとおりです。

@@ -83,7 +83,7 @@ def filter_tokens_df(
     if excl_set is not None:
         s = s[~s["pos"].isin(excl_set)]
 
-    return s
+    return s.reset_index(drop=True)
 
 
 # ----------------------------------------------------------------------
@@ -179,8 +179,8 @@ def tokenize_text_sudachi(
 def tokenize_df(
     df: pd.DataFrame,
     *,
-    id_col: str = "id",
-    text_col: str = "text",
+    id_col: str = "article_id",
+    text_col: str = "article",
     engine: str = "sudachi",
     tokenizer=None,
     tokenize_text_fn: Optional[Callable[[str], List[Tuple[str, str, Any]]]] = None,
@@ -195,6 +195,18 @@ def tokenize_df(
     テキスト DataFrame を縦持ち token DataFrame に変換する
     """
     records = []
+
+    # 入力チェック（列名ミスを早期に検出）
+    if id_col not in df.columns:
+        raise KeyError(
+            f"tokenize_df: DataFrame に id_col={id_col!r} 列がありません。"
+            f"存在する列: {list(df.columns)}"
+        )
+    if text_col not in df.columns:
+        raise KeyError(
+            f"tokenize_df: DataFrame に text_col={text_col!r} 列がありません。"
+            f"存在する列: {list(df.columns)}"
+        )
 
     # tokenize_text_fn が与えられていればそれを最優先
     if tokenize_text_fn is None:
@@ -262,7 +274,7 @@ def tokenize_df(
 def tokens_to_text(
     df: pd.DataFrame,
     *,
-    id_col: str = "id",
+    id_col: str = "article_id",
     word_col: str = "word",
     sep: str = " ",
     pos_keep: Optional[Iterable[str]] = None,

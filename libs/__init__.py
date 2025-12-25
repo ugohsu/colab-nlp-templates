@@ -2,6 +2,7 @@ from .preprocess import (
     tokenize_df,
     tokenize_text_janome,
     tokenize_text_sudachi,
+    filter_tokens_df,
     tokens_to_text,
 )
 
@@ -26,7 +27,8 @@ __all__ = [
     "tokenize_text_janome",
     "tokenize_text_sudachi",
 
-    # ユーティリティ
+    # 前処理後ユーティリティ
+    "filter_tokens_df",
     "tokens_to_text",
 
     # テキスト入出力（基本）

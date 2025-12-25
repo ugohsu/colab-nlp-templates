@@ -35,6 +35,8 @@ def tokenize_text_janome(
     tokenizer=None,
     use_base_form: bool = True,
     pos_keep: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
     stopwords: Optional[set[str]] = None,
     extra_info: bool = True,
 ) -> list[TokenRecord]:
@@ -82,11 +84,17 @@ def tokenize_text_janome(
     t = tokenizer or JanomeTokenizer()
     stopwords = stopwords or set()
     pos_keep_set = set(pos_keep) if pos_keep is not None else None
+    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
+    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
 
     out: list[TokenRecord] = []
     for tok in t.tokenize(text):
         pos = tok.part_of_speech.split(",")[0]
         if pos_keep_set is not None and pos not in pos_keep_set:
+            continue
+        if pos_exclude_set is not None and pos in pos_exclude_set:
+            continue
+        if pos_exclude_set is not None and pos in pos_exclude_set:
             continue
 
         word = tok.base_form if use_base_form else tok.surface
@@ -118,6 +126,8 @@ def tokenize_text_sudachi(
     tokenizer=None,
     word_form: WordForm = "dictionary",
     pos_keep: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
     stopwords: Optional[set[str]] = None,
     extra_info: bool = True,
 ) -> list[TokenRecord]:
@@ -170,6 +180,8 @@ def tokenize_text_sudachi(
 
     stopwords = stopwords or set()
     pos_keep_set = set(pos_keep) if pos_keep is not None else None
+    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
+    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
 
     if tokenizer is None:
         dic = Dictionary(dict=dict_type)
@@ -187,6 +199,10 @@ def tokenize_text_sudachi(
         pos_tuple = m.part_of_speech()
         pos = pos_tuple[0]
         if pos_keep_set is not None and pos not in pos_keep_set:
+            continue
+        if pos_exclude_set is not None and pos in pos_exclude_set:
+            continue
+        if pos_exclude_set is not None and pos in pos_exclude_set:
             continue
 
         w = _word(m)
@@ -228,6 +244,8 @@ def tokenize_df(
     # 共通オプション
     stopwords: Optional[set[str]] = None,
     pos_keep: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
     extra_col: Optional[str] = "token_info",
     # Janome 固有オプション（※tokenizer 注入は tokenize_text_fn に寄せる）
     use_base_form: bool = True,
@@ -282,6 +300,8 @@ def tokenize_df(
 
     stopwords = stopwords or set()
     pos_keep_set = set(pos_keep) if pos_keep is not None else None
+    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
+    pos_exclude_set = set(pos_exclude) if pos_exclude is not None else None
     # extra_col が無いなら info を作らない（無駄なので）
     want_info = bool(extra_info) and (extra_col is not None)
 
@@ -302,6 +322,7 @@ def tokenize_df(
                 tokenizer=janome_tok,
                 use_base_form=use_base_form,
                 pos_keep=pos_keep_set,
+                pos_exclude=pos_exclude_set,
                 stopwords=stopwords,
                 extra_info=want_info,
             )
@@ -329,6 +350,7 @@ def tokenize_df(
                 dict_type=dict_type,
                 word_form=word_form,
                 pos_keep=pos_keep_set,
+                pos_exclude=pos_exclude_set,
                 stopwords=stopwords,
                 extra_info=want_info,
             )
@@ -362,6 +384,8 @@ def tokens_to_text(
     df: pd.DataFrame,
     *,
     pos_keep: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
+    pos_exclude: Optional[Iterable[str]] = None,
 ) -> str:
     """
     形態素解析結果（縦持ち DataFrame）を、スペース区切りの文字列に戻します。

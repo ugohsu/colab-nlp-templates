@@ -55,6 +55,16 @@
 
 ## 関数群（libs）の基本的な使い方 (例)
 
+> ⚠️ **注意（Google Colab での git clone）**  
+> 以下の `git clone` は **最初の1回だけ実行してください**。  
+> 同じノートブックで 2 回以上実行すると、
+>
+> ```
+> fatal: destination path 'colab-nlp-templates' already exists
+> ```
+>
+> というエラーが出ます。当該セルで fatal を出した行以降のコードは実行されません。
+
 ```python
 !git clone https://github.com/ugohsu/colab-nlp-templates.git
 
@@ -73,16 +83,6 @@ from libs import (
 ※ 各関数に必要な外部ライブラリの install 方法や  
 　事前に実行すべきテンプレートについては、  
 　**対応する docs を必ず参照してください。**
-
-> ⚠️ **注意（Google Colab での git clone）**  
-> 以下の `git clone` は **最初の1回だけ実行してください**。  
-> 同じノートブックで 2 回以上実行すると、
->
-> ```
-> fatal: destination path 'colab-nlp-templates' already exists
-> ```
->
-> というエラーが出ます。当該セルで fatal を出した行以降のコードは実行されません。
 
 ---
 

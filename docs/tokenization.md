@@ -693,6 +693,8 @@ df_tokens = tokenize_df(
 )
 ```
 
+Sudachi のユーザー辞書の作成方法については、[公式ドキュメント（2025-12-26時点）](Sudachi_user_dict.md) を参照しましょう。
+
 ---
 
 ## 9.4 tokenize_text_fn を使って制御する（Sudachi）

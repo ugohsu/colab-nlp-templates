@@ -60,169 +60,284 @@ from libs import tokenize_df
 
 ---
 
-## tokenize_df のオプション（詳細）
+# 1. まず全体像を理解する（重要）
 
-以下では、前処理モジュール `preprocess.py` に定義されている  
-主要関数について、それぞれ **取りうるオプションをすべて**丁寧に説明します。
+## 1.1 なぜ「形態素解析」が必要なのか
+
+日本語の文章は、英語のように単語ごとに空白で区切られていません。
+
+例：
+> 今日は良い天気でした。
+
+この文をそのままコンピュータに渡しても、
+- 「今日は」
+- 「良い」
+- 「天気」
+- 「でした」
+
+といった **意味のある単位（語）** を自動で理解することはできません。
+
+そこで必要になるのが **形態素解析** です。
+
+形態素解析とは、
+> 文を「これ以上分解すると意味を失う最小単位（形態素）」に分割し、  
+> それぞれに品詞などの情報を付与する処理
+
+です。
 
 ---
 
-# 1) tokenize_df
+## 1.2 なぜ「縦持ち DataFrame」にするのか
 
-## 役割
+本ライブラリでは、形態素解析の結果を次のような形で扱います。
 
-文書単位の DataFrame を受け取り、  
-形態素解析を行って **縦持ち token DataFrame** に変換します。
+| article_id | word | pos |
+|-----------|------|-----|
+| 1 | 今日 | 名詞 |
+| 1 | 良い | 形容詞 |
+| 1 | 天気 | 名詞 |
+| 1 | だ | 助動詞 |
 
-Janome / Sudachi の切り替え、品詞フィルタ、stopwords 除去などを  
-**一括で制御するための入口関数**です。
+このように  
+**「1行 = 1トークン（語）」**  
+という形式を「縦持ち」と呼びます。
+
+### なぜ縦持ちがよいのか？
+
+- 語の出現頻度を数えやすい
+- 品詞フィルタが簡単
+- LDA / TF-IDF / WordCloud に直接つながる
+- pandas の groupby / value_counts がそのまま使える
+
+という利点があるためです。
 
 ---
 
-## シグネチャ（概念）
+## 1.3 tokenize_df は「入口関数」
+
+このライブラリでは、
+
+- tokenize_text_janome
+- tokenize_text_sudachi
+- filter_tokens_df
+
+といった複数の関数がありますが、  
+**通常は tokenize_df だけを使えば十分**です。
+
+tokenize_df は、
+
+> 「DataFrame を受け取り、  
+>  形態素解析から後処理までをまとめて行う入口」
+
+として設計されています。
+
+---
+
+# 2. tokenize_df を段階的に理解する
+
+## 2.1 最小構成（まずはこれ）
 
 ```python
-tokenize_df(
-    df,
-    id_col="article_id",
-    text_col="article",
-    engine="sudachi",
-    tokenizer=None,
-    tokenize_text_fn=None,
-    split_mode="C",
-    use_base_form=True,
-    pos_keep=None,
-    pos_exclude=None,
-    stopwords=None,
-    extra_col="token_info",
-) -> pandas.DataFrame
+df_tok = tokenize_df(df)
 ```
 
----
+これだけで、
 
-## 引数一覧
+- engine = "sudachi"
+- use_base_form = True
+- 品詞フィルタなし
+- stopwords なし
 
-### df（必須）
-- **型**：`pandas.DataFrame`
-- **意味**：入力（文書単位）の DataFrame
-- **注意**：`id_col` と `text_col` を含んでいる必要があります
+という **最小構成** の前処理が行われます。
 
-### id_col
-- **型**：`str`
-- **既定**：`"article_id"`
-- **意味**：文書ID列名
-
-### text_col
-- **型**：`str`
-- **既定**：`"article"`
-- **意味**：解析対象テキスト列名
-
-### engine
-- **型**：`str`
-- **既定**：`"sudachi"`
-- **取りうる値**：`"sudachi"` / `"janome"`
-- **意味**：使用する形態素解析エンジン
-
-### tokenizer
-- **型**：Janome / Sudachi tokenizer
-- **既定**：`None`
-- **意味**：外部で初期化した tokenizer を使い回したい場合に指定
-
-### tokenize_text_fn
-- **型**：callable または None
-- **意味**：1テキストのトークナイズ処理を完全に差し替えるフック
-
-### split_mode（Sudachi 用）
-- **型**：`str`
-- **既定**：`"C"`
-- **意味**：Sudachi の分割モード
-
-### use_base_form（共通）
-- **型**：`bool`
-- **既定**：`True`
-- **意味**：基本形（辞書形）を word として使うか
-
-### pos_keep / pos_exclude
-- **型**：iterable[str] または None
-- **意味**：品詞（大分類）によるフィルタ
-
-### stopwords
-- **型**：iterable[str] または None
-- **意味**：語による除外リスト
-
-### extra_col
-- **型**：`str` または None
-- **意味**：token_info 列を作るかどうか
+初学者の方は、まずこの形をそのまま使ってください。
 
 ---
 
-# 2) filter_tokens_df
-
-## 役割
-token DataFrame に対して、品詞フィルタのみを適用します。
-
-## シグネチャ
+## 2.2 engine を切り替える
 
 ```python
-filter_tokens_df(
+df_tok = tokenize_df(df, engine="janome")
+```
+
+とすると、Janome が使われます。
+
+### Janome と Sudachi の違い（考え方）
+
+| 観点 | Janome | Sudachi |
+|----|----|----|
+| 導入 | 簡単 | やや手間 |
+| 精度 | 十分 | 高い |
+| 用途 | 授業・演習 | 研究・実務 |
+| 正規化 | ほぼ無し | 可能 |
+
+👉 **授業では Janome、研究では Sudachi**  
+と考えて問題ありません。
+
+---
+
+## 2.3 use_base_form とは何か
+
+```python
+df_tok = tokenize_df(df, use_base_form=True)
+```
+
+### 何が変わるのか？
+
+- True（既定）：基本形（辞書形）を使う
+- False：表層形を使う
+
+例：
+
+| 設定 | 得られる word |
+|----|----|
+| True | 食べる |
+| False | 食べた |
+
+### なぜ基本形を使うのか？
+
+- 「食べる」「食べた」「食べない」を同一語として扱える
+- 語彙数が爆発しにくい
+- LDA や TF-IDF で安定する
+
+👉 **基本的には True のまま**で構いません。
+
+---
+
+# 3. 品詞フィルタという考え方
+
+## 3.1 なぜ品詞を落とすのか
+
+分析では、
+
+- 助詞（は、が、を）
+- 記号
+- 空白
+
+などは、意味的に重要でないことが多いです。
+
+そのため、**品詞で語を選別**します。
+
+---
+
+## 3.2 pos_exclude の例
+
+```python
+df_tok = tokenize_df(
     df,
-    pos_keep=None,
-    pos_exclude=None,
-    strict=True,
+    pos_exclude={"助詞", "補助記号", "空白"}
 )
 ```
 
----
+### 注意点（重要）
 
-# 3) tokenize_text_janome
+- いきなり厳しく落としすぎない
+- まずは結果を見てから調整する
 
-## 役割
-Janome を用いて 1テキストをトークナイズします。
-
-## シグネチャ
-
-```python
-tokenize_text_janome(
-    text,
-    tokenizer,
-    use_base_form=True,
-    extra_col="token_info",
-)
-```
+👉 **最初は何も指定しない**のが安全です。
 
 ---
 
-# 4) tokenize_text_sudachi
+# 4. tokenize_text_janome / sudachi の役割
 
-## 役割
-Sudachi を用いて 1テキストをトークナイズします。
+## 4.1 なぜ tokenize_text_* があるのか
 
-## シグネチャ
+tokenize_df の内部では、
+
+- Janome 用
+- Sudachi 用
+
+に分かれた **1テキスト処理関数**が使われています。
+
+これらは主に、
+
+- 高速化したい
+- tokenizer を使い回したい
+- 特殊な処理を入れたい
+
+ときに使います。
+
+---
+
+## 4.2 Sudachi の word_form（重要）
+
+Sudachi では、次のような語形を選べます。
+
+| word_form | 意味 |
+|----|----|
+| dictionary | 辞書形 |
+| surface | 表層形 |
+| normalized | 正規化形 |
 
 ```python
 tokenize_text_sudachi(
     text,
-    tokenizer,
-    split_mode="C",
-    word_form=None,
-    use_base_form=True,
-    extra_col="token_info",
+    tokenizer=tok,
+    word_form="normalized"
 )
 ```
 
-## word_form オプション
+### 正規化形とは？
 
-| word_form | 採用される語形 |
-|---|---|
-| None | use_base_form に従う |
-| "dictionary" | 辞書形 |
-| "surface" | 表層形 |
-| "normalized" | 正規化形 |
+- 全角・半角の統一
+- 表記ゆれの吸収
+
+例：
+- ｺﾝﾋﾟｭｰﾀ
+- コンピューター
+
+→ 同じ語として扱われる
+
+👉 **表記ゆれが問題になる研究では非常に重要**です。
 
 ---
 
-## 設計方針まとめ
+# 5. tokenize_text_fn は「最後の逃げ道」
 
-- 共通オプションは tokenize_df で吸収
-- エンジン固有の処理は tokenize_text_* 側で吸収
-- それでも足りなければ tokenize_text_fn で完全差し替え
+## 5.1 なぜ用意されているのか
+
+すべてを共通 API にすると、
+
+- 柔軟性が失われる
+- 特殊な研究に対応できない
+
+そこで、
+
+> 「どうしても必要な人のための出口」
+
+として tokenize_text_fn が用意されています。
+
+---
+
+## 5.2 使うべきでないケース
+
+- 初学者
+- 授業課題
+- 標準的な分析
+
+👉 **まずは使わないでください。**
+
+---
+
+## 5.3 使うべきケース
+
+- MeCab を使いたい
+- 独自辞書を使う
+- 特殊な正規化をしたい
+
+---
+
+# 6. まとめ（重要）
+
+- tokenize_df は「入口関数」
+- 最初は **最小構成** で使う
+- Janome / Sudachi の違いは「用途」
+- 正規化や拡張は段階的に
+
+---
+
+このドキュメントは、
+**「なぜそう設計されているのか」**
+を理解することを最優先に書かれています。
+
+コードを写す前に、ぜひ一度、全体を通して読んでください。

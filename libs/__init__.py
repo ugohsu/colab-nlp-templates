@@ -15,9 +15,6 @@ from .gsheet_io import (
 
 from .bow import create_wordcloud
 
-from .corpus_pass1 import (
-    process_manifest_to_jsonl,
-)
 
 __all__ = [
     # 前処理（入口）
@@ -40,7 +37,4 @@ __all__ = [
 
     # BoW / 可視化
     "create_wordcloud",
-
-    # 大規模テキスト処理（corpus 1パス目）
-    "process_manifest_to_jsonl",
 ]

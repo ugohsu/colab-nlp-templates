@@ -611,7 +611,126 @@ df_tok = tokenize_df(
 
 ---
 
-# 9. まとめ
+# 9. ユーザー定義辞書
+
+形態素解析では、既存の辞書に含まれていない専門用語・固有名詞・複合語などを  
+**1 語として扱いたい** 場面がよくあります。そのために利用するのが  
+**ユーザー定義辞書**です。
+
+本ライブラリでは、ユーザー定義辞書の扱いについて次の方針を採っています。
+
+- ユーザー定義辞書の指定や管理は **Janome / SudachiPy 側で行う**
+- tokenize_df は **作成済みの tokenizer をそのまま使う**
+- 追加設定が必要な場合は **tokenize_text_fn で明示的に制御する**
+
+このため、ユーザー定義辞書を使う場合でも  
+**preprocess.py を変更する必要はありません。**
+
+---
+
+## 9.1 基本的な考え方
+
+tokenize_df は「入口関数」として設計されており、  
+形態素解析エンジン固有の詳細設定は扱いません。
+
+役割分担は次のとおりです。
+
+- **辞書・詳細設定**  
+  → Janome / SudachiPy で tokenizer を作成する段階で指定
+- **DataFrame 全体のトークナイズ処理**  
+  → tokenize_df が担当
+
+したがって、
+
+> tokenizer を自分で作って tokenize_df に渡せば、  
+> その設定（ユーザー定義辞書を含む）がそのまま反映される
+
+という構造になっています。
+
+---
+
+## 9.2 Janome でユーザー定義辞書を使う
+
+Janome では、CSV 形式のユーザー辞書を指定して Tokenizer を作成できます。
+
+```python
+from janome.tokenizer import Tokenizer
+from libs import tokenize_df
+
+# 1. ユーザー辞書を指定して Tokenizer を作成
+my_tokenizer = Tokenizer(
+    udic_path="user_dictionary.csv",
+    udic_enc="utf8"
+)
+
+# 2. 作成した tokenizer を tokenize_df に渡す
+df_tokens = tokenize_df(
+    df,
+    engine="janome",
+    tokenizer=my_tokenizer
+)
+```
+
+---
+
+## 9.3 SudachiPy でユーザー定義辞書を使う
+
+SudachiPy では、ユーザー辞書や正規化設定を  
+**設定ファイル（sudachi.json）でまとめて管理する**のが一般的です。
+
+```python
+from sudachipy import dictionary
+from libs import tokenize_df
+
+my_tokenizer = dictionary.Dictionary(
+    config_path="path/to/sudachi.json"
+).create()
+
+df_tokens = tokenize_df(
+    df,
+    engine="sudachi",
+    tokenizer=my_tokenizer
+)
+```
+
+---
+
+## 9.4 tokenize_text_fn を使って制御する（Sudachi）
+
+```python
+from sudachipy import dictionary
+from libs import tokenize_df, tokenize_text_sudachi
+
+tokenizer = dictionary.Dictionary(
+    config_path="path/to/sudachi.json"
+).create()
+
+def my_tokenize_fn(text):
+    return tokenize_text_sudachi(
+        text,
+        tokenizer=tokenizer,
+        split_mode="B",
+        word_form="normalized"
+    )
+
+df_tokens = tokenize_df(
+    df,
+    tokenize_text_fn=my_tokenize_fn
+)
+```
+
+---
+
+## 9.5 まとめ
+
+- ユーザー定義辞書は tokenizer 作成時に指定する
+- tokenize_df は tokenizer を差し替えるだけで対応できる
+- split_mode や word_form を変えたい場合は tokenize_text_fn を使う
+- preprocess.py を変更する必要はない
+
+---
+
+# 10. 全体のまとめ
 
 - `tokenize_df` は入口（デフォルトは Janome）
 - まず全部 tokenize → 結果を観察 → `filter_tokens_df` で段階的に落とす

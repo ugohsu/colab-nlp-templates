@@ -1,13 +1,11 @@
 """
 前処理（形態素解析）ユーティリティ
 
-- Janome / SudachiPy を共通 API で扱う
-- use_base_form を共通オプションとして提供
-    - Janome  : 表層形 / 原形（base_form）
-    - Sudachi : 表層形 / 辞書形（dictionary_form）
-- Sudachi の normalized_form などは tokenize_text_sudachi(word_form=...) で指定可能
-  （さらに高度な場合は tokenize_text_fn をユーザー側で差し替える）
-- 品詞フィルタは tokenize 後に filter_tokens_df で探索的に調整可能
+設計方針
+- tokenize_df は「Janome / Sudachi 共通のオプション」を中心に提供する（学部生向けに単純化）
+- Sudachi 固有の split_mode / word_form（dictionary/surface/normalized）などは tokenize_text_sudachi に残す
+- split_mode を変更したい場合は、tokenize_text_fn を使って tokenize_text_sudachi を呼び出す（レシピは tokenization.md 参照）
+- 品詞フィルタは、まず tokenize（全トークン）→ あとで filter_tokens_df で段階的に調整する運用を推奨
 """
 
 from __future__ import annotations
@@ -120,7 +118,9 @@ def tokenize_text_janome(
 
     records: List[Tuple[str, str, Optional[Dict[str, Any]]]] = []
     for token in tokenizer.tokenize(s):
+        # word: 原形（base_form） or 表層形（surface）
         word = token.base_form if use_base_form else token.surface
+        # 品詞（大分類）
         pos = token.part_of_speech.split(",")[0]
 
         token_info = None
@@ -229,10 +229,9 @@ def tokenize_df(
     *,
     id_col: str = "article_id",
     text_col: str = "article",
-    engine: str = "sudachi",
+    engine: str = "janome",
     tokenizer=None,
     tokenize_text_fn: Optional[Callable[[str], List[Tuple[str, str, Any]]]] = None,
-    split_mode: str = "C",
     use_base_form: bool = True,
     pos_keep: Optional[Iterable[str]] = None,
     pos_exclude: Optional[Iterable[str]] = None,
@@ -240,7 +239,41 @@ def tokenize_df(
     extra_col: Optional[str] = "token_info",
 ) -> pd.DataFrame:
     """
-    テキスト DataFrame を縦持ち token DataFrame に変換する
+    テキスト DataFrame を縦持ち token DataFrame に変換する（入口関数）
+
+    方針
+    - tokenize_df は Janome / Sudachi 共通の引数だけに寄せる（学部生向け）
+    - Sudachi の split_mode / word_form を変えたい場合は tokenize_text_fn を使用する
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        入力 DataFrame（文書単位）
+    id_col : str
+        文書ID列名
+    text_col : str
+        テキスト列名
+    engine : {"janome","sudachi"}
+        形態素解析エンジン（デフォルトは janome）
+    tokenizer : optional
+        エンジンの tokenizer を外部で生成して渡す（高速化・使い回し）
+    tokenize_text_fn : callable, optional
+        1テキストのトークナイズ処理を完全に差し替える
+        返り値は list[(word, pos, token_info)] 形式にする
+    use_base_form : bool
+        基本形を使うか（Janome: base_form / Sudachi: dictionary_form）
+    pos_keep, pos_exclude : iterable[str], optional
+        品詞（大分類）フィルタ
+        ※教育用途では、まず無指定で tokenize して、後で filter_tokens_df で段階的に調整するのがおすすめ
+    stopwords : iterable[str], optional
+        除外語リスト（word で判定）
+    extra_col : str | None
+        token_info 列名。None の場合は token_info を作らない（軽量化）
+
+    Returns
+    -------
+    pandas.DataFrame
+        columns: [id_col, "word", "pos", extra_col(optional)]
     """
     # 入力チェック（列名ミスを早期に検出）
     if id_col not in df.columns:
@@ -263,25 +296,32 @@ def tokenize_df(
                 from janome.tokenizer import Tokenizer
                 tokenizer = Tokenizer()
 
-            tokenize_text_fn = lambda t: tokenize_text_janome(
-                t,
-                tokenizer=tokenizer,
-                use_base_form=use_base_form,
-                extra_col=extra_col,
-            )
+            def _fn(t: str):
+                return tokenize_text_janome(
+                    t,
+                    tokenizer=tokenizer,
+                    use_base_form=use_base_form,
+                    extra_col=extra_col,
+                )
+            tokenize_text_fn = _fn
 
         elif eng == "sudachi":
             if tokenizer is None:
                 from sudachipy import dictionary
                 tokenizer = dictionary.Dictionary().create()
 
-            tokenize_text_fn = lambda t: tokenize_text_sudachi(
-                t,
-                tokenizer=tokenizer,
-                split_mode=split_mode,
-                use_base_form=use_base_form,
-                extra_col=extra_col,
-            )
+            # split_mode は tokenize_df からは触らない（必要なら tokenize_text_fn で指定する）
+            def _fn(t: str):
+                return tokenize_text_sudachi(
+                    t,
+                    tokenizer=tokenizer,
+                    split_mode="C",
+                    word_form=None,
+                    use_base_form=use_base_form,
+                    extra_col=extra_col,
+                )
+            tokenize_text_fn = _fn
+
         else:
             raise ValueError(f"tokenize_df: Unknown engine={engine!r}")
 
@@ -292,14 +332,10 @@ def tokenize_df(
 
         tokens = tokenize_text_fn(text)
         for word, pos, token_info in tokens:
-            records.append(
-                {
-                    id_col: doc_id,
-                    "word": word,
-                    "pos": pos,
-                    extra_col: token_info if extra_col else None,
-                }
-            )
+            rec = {id_col: doc_id, "word": word, "pos": pos}
+            if extra_col:
+                rec[extra_col] = token_info
+            records.append(rec)
 
     out = pd.DataFrame(records)
 
@@ -307,7 +343,7 @@ def tokenize_df(
     if stopwords is not None and not out.empty:
         out = out[~out["word"].isin(set(stopwords))]
 
-    # pos filter
+    # pos filter（必要なら）
     if not out.empty:
         out = filter_tokens_df(
             out,

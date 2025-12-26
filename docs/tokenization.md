@@ -60,7 +60,7 @@ from libs import tokenize_df
 
 ---
 
-# 1. まず全体像を理解する（重要）
+# 1. まず全体像を理解する
 
 ## 1.1 なぜ「形態素解析」が必要なのか
 
@@ -87,7 +87,7 @@ from libs import tokenize_df
 
 ---
 
-## 1.2 「表層（ひょうそう）」とは何か（初学者がつまずく点）
+## 1.2 「表層（ひょうそう）」とは何か
 
 形態素解析では、1つの語（トークン）に対して、複数の「語の表し方」があります。
 
@@ -123,7 +123,7 @@ from libs import tokenize_df
 **「1行 = 1トークン（語）」**  
 という形式を「縦持ち」と呼びます。
 
-### なぜ縦持ちがよいのか？
+### 縦持ちの利点
 
 - 語の出現頻度（count）を数えやすい
 - 品詞フィルタが簡単（`df[df["pos"]=="名詞"]` のように書ける）
@@ -132,47 +132,41 @@ from libs import tokenize_df
 
 ---
 
-# 2. “ステップアップ”の考え方：まず全部出して、あとで絞る
+# 2. すすめ方：まず tokenize、あとでフィルタ
 
-初学者がやりがちな失敗は、
+いきなり「名詞だけ」などに限定してしまうと、  
+何が消えたのか／何が残ったのかが分かりにくくなります。
 
-> いきなり「名詞だけ」などに限定してしまい、  
-> 何が消えたのか／何が残ったのかが分からなくなる
-
-ことです。
-
-そこで本ライブラリでは、次のステップアップを推奨します。
+そこで、次の順序をおすすめします。
 
 ## Step 1：まずは品詞を限定せず tokenize する（全トークン）
+
 ```python
-df_tok_all = tokenize_df(df)
+df_tok_all = tokenize_df(df)  # デフォルトは Janome
 ```
 
 ## Step 2：結果を観察する（頻出語・品詞）
+
 ```python
 df_tok_all["pos"].value_counts().head(20)
 df_tok_all["word"].value_counts().head(20)
 ```
 
-## Step 3：あとから filter していく（品詞を落とす）
+## Step 3：あとから filter していく（段階的に落とす）
+
 ```python
 from libs.preprocess import filter_tokens_df
 
-df_tok = filter_tokens_df(
-    df_tok_all,
-    pos_exclude={"助詞", "補助記号", "空白"}
-)
+# まずは記号や空白だけ落とす
+df_tok_1 = filter_tokens_df(df_tok_all, pos_exclude={"補助記号", "空白"})
+
+# 次に助詞も落とす（目的により）
+df_tok_2 = filter_tokens_df(df_tok_1, pos_exclude={"助詞"})
 ```
-
-この流れだと、
-- 何を落としたのかが明確
-- 品詞設計を試行錯誤しやすい
-
-という利点があります。
 
 ---
 
-# 3. 関数リファレンス（学部生向け・丁寧版）
+# 3. 関数リファレンス（丁寧版）
 
 ここからは、以下の4関数について
 
@@ -213,10 +207,9 @@ tokenize_df(
     *,
     id_col="article_id",
     text_col="article",
-    engine="sudachi",
+    engine="janome",
     tokenizer=None,
     tokenize_text_fn=None,
-    split_mode="C",
     use_base_form=True,
     pos_keep=None,
     pos_exclude=None,
@@ -225,8 +218,10 @@ tokenize_df(
 ) -> pandas.DataFrame
 ```
 
-`*` が付いているのは「キーワード引数として渡す」想定だと思ってください。  
-（例：`tokenize_df(df, id_col="id")` のように書く。）
+ポイント：
+- **デフォルトは Janome**（導入が簡単で軽量）
+- Sudachi 固有の `split_mode` は `tokenize_df` では扱いません  
+  → 変更したい場合は `tokenize_text_fn` を使います（後述）
 
 ---
 
@@ -257,8 +252,8 @@ tokenize_df(
 
 ### engine
 - 型：`str`
-- 既定：`"sudachi"`
-- 取りうる値：`"sudachi"` / `"janome"`
+- 既定：`"janome"`
+- 取りうる値：`"janome"` / `"sudachi"`
 - 意味：どちらの形態素解析エンジンを使うか
 
 ---
@@ -274,15 +269,14 @@ tokenize_df(
 
 ---
 
-### tokenize_text_fn（最重要：拡張ポイント）
+### tokenize_text_fn（拡張ポイント）
 - 型：`callable` または `None`
 - 既定：`None`
 
 意味：
 - 1テキスト（1文書）をトークナイズする処理を「丸ごと差し替える」ための引数。
 
-**指定した場合は、原則として tokenize_text_fn が最優先です。**  
-（engine や split_mode を tokenize_df 側で指定しても、tokenize_text_fn の中で別のことをしていればそちらが勝ちます。）
+**指定した場合は、原則として tokenize_text_fn が最優先です。**
 
 #### tokenize_text_fn の仕様（必ず守る）
 
@@ -302,17 +296,6 @@ tokenize_df(
   ("良い", "形容詞", {"surface": "良い", "base_form": "良い"}),
 ]
 ```
-
----
-
-### split_mode（Sudachi 用）
-- 型：`str`
-- 既定：`"C"`
-- 取りうる値：`"A"`, `"B"`, `"C"`
-- 意味：Sudachi の分割粒度
-- 注意：
-  - `engine="janome"` のときは無視されます
-  - `tokenize_text_fn` を自作する場合は、tokenize_text_fn 側で split_mode を扱うのが普通です
 
 ---
 
@@ -379,20 +362,15 @@ tokenize_df の出力には次の列が含まれます。
 df_tok_all = tokenize_df(df, id_col="article_id", text_col="article")
 ```
 
-### レシピ2：Janome を明示
+### レシピ2：Sudachi を使う
 ```python
-df_tok_all = tokenize_df(df, engine="janome")
+df_tok_all = tokenize_df(df, engine="sudachi")
 ```
 
-### レシピ3：品詞フィルタを“後で”やる（推奨）
+### レシピ3：品詞フィルタを“後で”やる
 ```python
 df_tok_all = tokenize_df(df, extra_col=None)
 df_tok = filter_tokens_df(df_tok_all, pos_exclude={"助詞","補助記号","空白"})
-```
-
-### レシピ4：stopwords
-```python
-df_tok = tokenize_df(df, stopwords={"する","ある","なる"})
 ```
 
 ---
@@ -403,8 +381,6 @@ df_tok = tokenize_df(df, stopwords={"する","ある","なる"})
 
 `filter_tokens_df` は token DataFrame を受け取り、  
 品詞（pos）でフィルタします。
-
-「まず tokenize してから後で落とす」という運用の中心関数です。
 
 ---
 
@@ -435,20 +411,6 @@ filter_tokens_df(
 - 型：`bool`
 - 既定：`True`
 - 意味：pos_keep と pos_exclude を同時指定した場合に矛盾チェックを行う
-- 授業では True 推奨（指定ミスが見つかる）
-
----
-
-## 5.4 レシピ：段階的に削る（推奨）
-```python
-df_tok_all = tokenize_df(df)
-
-# まず記号・空白だけ消す
-df_tok_1 = filter_tokens_df(df_tok_all, pos_exclude={"補助記号","空白"})
-
-# 次に助詞も消す（研究目的による）
-df_tok_2 = filter_tokens_df(df_tok_1, pos_exclude={"助詞"})
-```
 
 ---
 
@@ -458,9 +420,6 @@ df_tok_2 = filter_tokens_df(df_tok_1, pos_exclude={"助詞"})
 
 Janome で 1つの文字列をトークナイズし、  
 `(word, pos, token_info)` の配列を返します。
-
-通常は tokenize_df から呼ばれますが、  
-tokenize_text_fn を作るときの「部品」として使います。
 
 ---
 
@@ -486,41 +445,12 @@ tokenize_text_janome(
 
 ### tokenizer（必須）
 - 型：`janome.tokenizer.Tokenizer`
-- 意味：Janome の tokenizer
 
 ### use_base_form
-- 型：`bool`
-- 既定：`True`
-- 意味：word を base_form（基本形）にするか surface（表層）にするか
+- tokenize_df と同じ
 
 ### extra_col
-- 型：`str` または `None`
-- 既定：`"token_info"`
-- 意味：
-  - None：token_info を作らない
-  - それ以外：token_info dict（surface/base_form/reading）を作る
-
----
-
-## 6.4 レシピ：tokenize_text_fn として使う（tokenizer 使い回し）
-```python
-from janome.tokenizer import Tokenizer
-from libs import tokenize_df
-from libs.preprocess import tokenize_text_janome
-
-tok = Tokenizer()
-
-df_tok = tokenize_df(
-    df,
-    tokenize_text_fn=lambda t: tokenize_text_janome(
-        t,
-        tokenizer=tok,
-        use_base_form=True,
-        extra_col=None,
-    ),
-    extra_col=None,
-)
-```
+- tokenize_df と同じ（None の場合 token_info を作らない）
 
 ---
 
@@ -530,9 +460,6 @@ df_tok = tokenize_df(
 
 Sudachi で 1つの文字列をトークナイズし、  
 `(word, pos, token_info)` の配列を返します。
-
-Sudachi の強み（分割モード、正規化形）を  
-**ユーザーが低レベル API を書かずに使える**ようにしています。
 
 ---
 
@@ -554,22 +481,16 @@ tokenize_text_sudachi(
 
 ## 7.3 引数（完全網羅）
 
-### text
-- 型：`str`（None/空文字の場合もありえる）
-- 挙動：None/空は `[]` を返す
-
 ### tokenizer（必須）
 - 型：Sudachi tokenizer（`dictionary.Dictionary().create()` の戻り値）
-- 意味：Sudachi の tokenizer
 
-### split_mode
+### split_mode（Sudachi 固有）
 - 型：`str`
 - 既定：`"C"`
 - 取りうる値：`"A"`, `"B"`, `"C"`
 - 意味：分割粒度（Aが細かい、Cが粗い…というイメージでOK）
-- 重要：**tokenize_df の split_mode を使うより、tokenize_text_fn 経由で明示する方が分かりやすい**（後述）
 
-### word_form（Sudachi の語形指定）
+### word_form（Sudachi 固有：語形指定）
 - 型：`str` または `None`
 - 既定：`None`
 - 意味：最終的に word として採用する語形を指定
@@ -577,24 +498,11 @@ tokenize_text_sudachi(
   - None：use_base_form に従う（True→dictionary_form / False→surface）
   - `"dictionary"`：辞書形
   - `"surface"`：表層形
-  - `"normalized"`：正規化形
-
-### use_base_form（共通）
-- 型：`bool`
-- 既定：`True`
-- 意味：word_form が None のときだけ参照
-
-### extra_col
-- 型：`str` または `None`
-- 既定：`"token_info"`
-- 意味：
-  - None：token_info を作らない
-  - それ以外：token_info dict（surface/dictionary_form/normalized_form）を作る
+  - `"normalized"`：正規化形（表記ゆれ吸収に有用）
 
 ---
 
-## 7.4 レシピ1：Sudachi で正規化形（normalized）を使う（推奨）
-「表記ゆれ」を吸収したいときの典型例です。
+## 7.4 レシピ：Sudachi の正規化形を使う（word_form="normalized"）
 
 ```python
 from sudachipy import dictionary
@@ -618,10 +526,10 @@ df_tok = tokenize_df(
 
 ---
 
-## 7.5 レシピ2：split_mode を指定したい（fn を使うレシピ）
+## 7.5 レシピ：Sudachi の split_mode を変える（tokenize_text_fn を使う）
 
-split_mode を変えると token の切れ方が変わります。  
-本ライブラリでは **tokenize_text_fn を使って明示する**のが分かりやすいです。
+`split_mode` は `tokenize_df` では受け取りません。  
+変えたい場合は、次のように `tokenize_text_fn` 経由で指定します。
 
 ```python
 from sudachipy import dictionary
@@ -647,30 +555,19 @@ df_tok_C = tokenize_df(
 )
 ```
 
-「A と C でどう違うか」を観察するのは良い演習になります。
-
 ---
 
-# 8. tokenize_text_fn を完全自作する（MeCab など）
+# 8. tokenize_text_fn を自作する（MeCab など）
 
-## 8.1 目的
-
-MeCab など別エンジンを使いたい場合でも、  
-tokenize_df の下流（BoW / LDA / WordCloud）に接続したい。
-
-そのために tokenize_text_fn を「仕様どおりに」自作します。
-
----
-
-## 8.2 tokenize_text_fn の入力仕様
+## 8.1 tokenize_text_fn の入力仕様
 
 - 入力：`text`（1文書分の文字列）
 - 可能性：None / 空文字が来ることがある
-- 推奨：None/空なら `[]` を返す（他関数と合わせる）
+- 推奨：None/空なら `[]` を返す
 
 ---
 
-## 8.3 tokenize_text_fn の出力仕様（最重要）
+## 8.2 tokenize_text_fn の出力仕様（最重要）
 
 戻り値は **list** で、要素は **3要素タプル**です。
 
@@ -681,29 +578,13 @@ tokenize_df の下流（BoW / LDA / WordCloud）に接続したい。
 ]
 ```
 
-各要素の意味：
-
-### (1) word（必須）
-- 型：`str`
-- 意味：下流の分析に使う語
-- 例：表層形でも基本形でもよい（研究目的で決める）
-
-### (2) pos（必須）
-- 型：`str`
-- 意味：品詞「大分類」（名詞、動詞、形容詞…）
-- 注意：細分類まで入れてもよいが、filter_tokens_df が想定するのは大分類
-
-### (3) token_info（任意）
-- 型：`dict` または `None`
-- 意味：追加情報（表層形や読みなど）
-- 使わないなら None でOK
-- extra_col=None にするなら、token_info を常に None にしてよい
+- `word`：`str`
+- `pos`：`str`（品詞の大分類）
+- `token_info`：`dict` または `None`
 
 ---
 
-## 8.4 MeCab の例（雛形）
-
-以下は「形」を示すだけの雛形です（実行には MeCab の導入が必要）。
+## 8.3 MeCab の例（雛形）
 
 ```python
 def tokenize_text_mecab(text):
@@ -724,22 +605,15 @@ def tokenize_text_mecab(text):
 df_tok = tokenize_df(
     df,
     tokenize_text_fn=tokenize_text_mecab,
-    extra_col=None,  # token_info を不要にする場合
+    extra_col=None,
 )
 ```
 
 ---
 
-# 9. まとめ（この順で学ぶと安全）
+# 9. まとめ
 
-1) まず tokenize_df で **全部 tokenize**（品詞は限定しない）  
-2) `value_counts` で **品詞・頻出語を観察**  
-3) `filter_tokens_df` で **段階的に落とす**  
-4) 研究用途では Sudachi の  
-   - `word_form="normalized"`（表記ゆれ吸収）  
-   - `split_mode="A/B/C"`（粒度調整）  
-   を tokenize_text_fn 経由で使う  
-5) さらに必要なら MeCab 等で tokenize_text_fn を自作し、  
-   **(word, pos, token_info)** 形式で返す
-
-この順番なら、初学者でも「何が起きているか」を見失いにくいです。
+- `tokenize_df` は入口（デフォルトは Janome）
+- まず全部 tokenize → 結果を観察 → `filter_tokens_df` で段階的に落とす
+- Sudachi 固有の調整（`split_mode`, `word_form`）は `tokenize_text_fn` 経由で行う
+- 別エンジンを使う場合は、`tokenize_text_fn` が返す形式（list of 3-tuples）を守る

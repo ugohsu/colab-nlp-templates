@@ -179,12 +179,23 @@ def tokenize_text_sudachi(
     if s == "":
         return []
 
+    # Gemini 指摘の通り：
+    # SplitMode は tokenizer インスタンスの属性である保証がないため、
+    # sudachipy から明示的に import して参照する。
+    try:
+        from sudachipy import SplitMode
+    except ImportError as e:
+        raise ImportError(
+            "SudachiPy が見つかりません。Sudachi を使う場合は "
+            "`pip install sudachipy sudachidict_core` を実行してください。"
+        ) from e
+
     mode_map = {
-        "A": tokenizer.SplitMode.A,
-        "B": tokenizer.SplitMode.B,
-        "C": tokenizer.SplitMode.C,
+        "A": SplitMode.A,
+        "B": SplitMode.B,
+        "C": SplitMode.C,
     }
-    mode = mode_map.get(str(split_mode).upper(), tokenizer.SplitMode.C)
+    mode = mode_map.get(str(split_mode).upper(), SplitMode.C)
 
     records: List[Tuple[str, str, Optional[Dict[str, Any]]]] = []
     for m in tokenizer.tokenize(s, mode):

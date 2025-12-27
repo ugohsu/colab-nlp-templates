@@ -74,7 +74,7 @@ sys.path.append("/content/colab-nlp-templates")
 >
 > というエラーが出ます。当該セルで fatal を出した行以降のコードは実行されません。
 
-具体的な関数をインポートする際には、以下のように指示します。
+具体的な関数をインポートする際には、以下のように指示します（例）。
 
 ```python
 from libs import (

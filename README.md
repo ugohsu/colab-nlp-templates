@@ -53,10 +53,19 @@
 
 ---
 
-## 関数群（libs）の基本的な使い方 (例)
+## 関数群（libs）の基本的な使い方
+
+libs で管理されている関数を使用する場合は、以下のコマンドを実行します。
+
+```python
+!git clone https://github.com/ugohsu/colab-nlp-templates.git
+
+import sys
+sys.path.append("/content/colab-nlp-templates")
+```
 
 > ⚠️ **注意（Google Colab での git clone）**  
-> 以下の `git clone` は **最初の1回だけ実行してください**。  
+> 上記の `git clone` は **最初の1回だけ実行してください**。  
 > 同じノートブックで 2 回以上実行すると、
 >
 > ```
@@ -65,12 +74,9 @@
 >
 > というエラーが出ます。当該セルで fatal を出した行以降のコードは実行されません。
 
+具体的な関数をインポートする際には、以下のように指示します。
+
 ```python
-!git clone https://github.com/ugohsu/colab-nlp-templates.git
-
-import sys
-sys.path.append("/content/colab-nlp-templates")
-
 from libs import (
     tokenize_df,
     build_text_df,

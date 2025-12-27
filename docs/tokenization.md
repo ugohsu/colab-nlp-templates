@@ -31,11 +31,6 @@ Janome と SudachiPy を **同時にインストールする必要はありま�
 
 ```python
 !pip install janome
-!git clone https://github.com/ugohsu/colab-nlp-templates.git
-
-import sys
-sys.path.append("/content/colab-nlp-templates")
-
 from libs import tokenize_df
 ```
 
@@ -45,11 +40,6 @@ from libs import tokenize_df
 
 ```python
 !pip install sudachipy sudachidict_core
-!git clone https://github.com/ugohsu/colab-nlp-templates.git
-
-import sys
-sys.path.append("/content/colab-nlp-templates")
-
 from libs import tokenize_df
 ```
 

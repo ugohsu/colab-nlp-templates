@@ -15,11 +15,6 @@ WordCloud は、形態素解析後の **Bag of Words（BoW）表現**を可視�
 
 ```python
 !pip install wordcloud
-!git clone https://github.com/ugohsu/colab-nlp-templates.git
-
-import sys
-sys.path.append("/content/colab-nlp-templates")
-
 from libs import tokens_to_text, create_wordcloud
 ```
 

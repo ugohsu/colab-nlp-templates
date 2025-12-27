@@ -154,11 +154,6 @@ print(text[:200])
 ### 最小例（.txt をすべて読む）
 
 ```python
-!git clone https://github.com/ugohsu/colab-nlp-templates.git
-
-import sys
-sys.path.append("/content/colab-nlp-templates")
-
 from libs import build_text_df
 
 ROOT_DIR = "/content/drive/MyDrive/data"

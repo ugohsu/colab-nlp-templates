@@ -152,6 +152,10 @@ df_tok_1 = filter_tokens_df(df_tok_all, pos_exclude={"補助記号", "空白"})
 
 # 次に助詞も落とす（目的により）
 df_tok_2 = filter_tokens_df(df_tok_1, pos_exclude={"助詞"})
+
+# stopword も落とせる
+top10words = df_tok_2["word"].value_count().head(10) # 出現頻度上位10単語をストップワードとして認定
+df_tok_3 = filter_tokens_df(df_tok_2, stopwords=(top10words, "いる", "ある"))
 ```
 
 ---
@@ -369,8 +373,14 @@ df_tok = filter_tokens_df(df_tok_all, pos_exclude={"助詞","補助記号","空�
 
 ## 5.1 何をする関数か
 
-`filter_tokens_df` は token DataFrame を受け取り、  
-品詞（pos）でフィルタします。
+`filter_tokens_df` は、`tokenize_df` が返す **トークン単位 DataFrame** を受け取り、  
+主に次の3種類の条件でトークンを除外・抽出するための関数です。
+
+- 品詞によるフィルタ（`pos_keep`, `pos_exclude`）
+- ストップワードによる除外（`stopwords`）
+- 指定の矛盾を検出するための安全チェック（`strict`）
+
+この関数は **tokenize 後に段階的に適用すること**を前提に設計されています。
 
 ---
 
@@ -382,25 +392,170 @@ filter_tokens_df(
     *,
     pos_keep=None,
     pos_exclude=None,
+    stopwords=None,
     strict=True,
 ) -> pandas.DataFrame
 ```
 
 ---
 
-## 5.3 引数（完全網羅）
+## 5.3 入力 DataFrame の前提
 
-### df（必須）
-- 型：`pandas.DataFrame`
-- 必須列：`pos`
+`df`（入力 DataFrame）は、最低限次の列を含んでいる必要があります。
 
-### pos_keep / pos_exclude
-- tokenize_df と同じ意味
+- `word`：トークン文字列
+- `pos`：品詞（大分類）
 
-### strict
+これらは `tokenize_df` の標準出力に含まれます。
+
+---
+
+## 5.4 pos_keep（残す品詞を指定）
+
+- 型：`iterable[str]` または `None`
+- 既定：`None`（すべて残す）
+
+指定した場合、`df["pos"]` が **pos_keep に含まれる行だけ** が残ります。
+
+```python
+# 名詞だけ残す
+df_noun = filter_tokens_df(df_tok, pos_keep={"名詞"})
+
+# 名詞と形容詞を残す
+df_noun_adj = filter_tokens_df(df_tok, pos_keep={"名詞", "形容詞"})
+```
+
+---
+
+## 5.5 pos_exclude（除外する品詞を指定）
+
+- 型：`iterable[str]` または `None`
+- 既定：`None`（除外しない）
+
+指定した場合、`df["pos"]` が **pos_exclude に含まれる行は除外**されます。
+
+```python
+# 助詞・助動詞を除外
+df_no_particles = filter_tokens_df(
+    df_tok,
+    pos_exclude={"助詞", "助動詞"}
+)
+
+# 記号類を除外
+df_no_symbols = filter_tokens_df(
+    df_tok,
+    pos_exclude={"補助記号", "記号"}
+)
+```
+
+---
+
+## 5.6 pos_keep と pos_exclude を同時に使う場合（strict）
+
 - 型：`bool`
 - 既定：`True`
-- 意味：pos_keep と pos_exclude を同時指定した場合に矛盾チェックを行う
+
+`pos_keep` と `pos_exclude` を **同時に指定した場合の安全装置**です。
+
+`strict=True` のとき：
+
+- 両者の集合が **完全に無関係（共通要素がゼロ）** の場合、  
+  意図しない指定の可能性が高いため `ValueError` を出します。
+
+```python
+# strict=True（デフォルト）
+df_f = filter_tokens_df(
+    df_tok,
+    pos_keep={"名詞", "動詞"},
+    pos_exclude={"助詞", "記号"},
+)
+```
+
+このチェックを無効にしたい場合は `strict=False` を指定します。
+
+```python
+df_f = filter_tokens_df(
+    df_tok,
+    pos_keep={"名詞", "動詞"},
+    pos_exclude={"助詞", "記号"},
+    strict=False,
+)
+```
+
+---
+
+## 5.7 stopwords（ストップワードによる除外）
+
+- 型：多様（下記参照）または `None`
+- 既定：`None`
+
+`stopwords` は **除外したい語の集合**として扱われます。  
+`df["word"]` が stopwords に含まれる行は除外されます。
+
+### 指定できる形式
+
+`stopwords` には、次のような形式を **そのまま渡せます**。
+
+- 単一の文字列  
+  ```python
+  stopwords="ある"
+  ```
+- 文字列のリスト / タプル / 集合  
+  ```python
+  stopwords=["ある", "いる"]
+  ```
+- pandas.Series（`value_counts()` の結果など）  
+  → **index 部分**が stopwords として使われます
+- pandas.Index
+- 上記を入れ子にした構造  
+  ```python
+  stopwords=(["ある", "いる"], vc.head(10))
+  ```
+
+内部では `_normalize_stopwords` により自動的に正規化されます。
+
+### 例
+
+```python
+# 頻出語上位をストップワードとして除外
+vc_top10 = df_tok["word"].value_counts().head(10)
+
+df_f = filter_tokens_df(
+    df_tok,
+    stopwords=vc_top10
+)
+
+# 手動指定 + 頻出語指定
+df_f = filter_tokens_df(
+    df_tok,
+    stopwords=(vc_top10, ["ある", "いる"])
+)
+```
+
+※ `"ある"` をそのまま渡しても、文字単位に分解されることはありません。
+
+---
+
+## 5.8 段階的にフィルタする例（推奨）
+
+```python
+# 1) まず全部 tokenize
+df_tok_all = tokenize_df(df)
+
+# 2) 記号・助詞を除外
+df_tok_1 = filter_tokens_df(
+    df_tok_all,
+    pos_exclude={"補助記号", "空白", "助詞"}
+)
+
+# 3) 頻出語 + 手動 stopwords を除外
+vc_top10 = df_tok_1["word"].value_counts().head(10)
+
+df_tok_2 = filter_tokens_df(
+    df_tok_1,
+    stopwords=(vc_top10, ["ある", "いる"])
+)
+```
 
 ---
 

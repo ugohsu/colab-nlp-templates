@@ -2,7 +2,7 @@
 前処理（形態素解析）ユーティリティ
 
 設計方針
-- tokenize_df は「Janome / Sudachi 共通のオプション」を中心に提供する（学部生向けに単純化）
+- tokenize_df は「Janome / Sudachi 共通のオプション」を中心に提供する
 - Sudachi 固有の split_mode / word_form（dictionary/surface/normalized）などは tokenize_text_sudachi に残す
 - split_mode を変更したい場合は、tokenize_text_fn を使って tokenize_text_sudachi を呼び出す（レシピは tokenization.md 参照）
 - 品詞フィルタは、まず tokenize（全トークン）→ あとで filter_tokens_df で段階的に調整する運用を推奨
@@ -44,6 +44,52 @@ def _compile_pos_filter(
     return keep_set, excl_set
 
 
+def _normalize_stopwords(stopwords) -> set:
+    """
+    stopwords を「除外語集合（set[str]）」に正規化する。
+
+    受け付ける入力（単体/複合を問わず）：
+    - None
+    - str（単語1つ）
+    - iterable[str]
+    - pandas.Series（value_counts() などを想定：index を語として採用）
+    - pandas.Index
+    - iterable of the above（入れ子も可）
+
+    注意：
+    - str は iterable だが、文字単位に分解しない（単語1つとして扱う）
+    """
+    result: set = set()
+
+    if stopwords is None:
+        return result
+
+    # str は最優先（iterable 扱いしない）
+    if isinstance(stopwords, str):
+        result.add(stopwords)
+        return result
+
+    # pandas Series / Index
+    if isinstance(stopwords, pd.Series):
+        # value_counts() の想定：index が語
+        result |= set(stopwords.index.astype(str))
+        return result
+
+    if isinstance(stopwords, pd.Index):
+        result |= set(stopwords.astype(str))
+        return result
+
+    # iterable（list/tuple/set など、入れ子も含む）
+    try:
+        for sw in stopwords:
+            result |= _normalize_stopwords(sw)
+        return result
+    except TypeError:
+        # iterable でない単体：文字列化して 1 語として扱う
+        result.add(str(stopwords))
+        return result
+
+
 # ----------------------------------------------------------------------
 # 公開ユーティリティ（tokenize 後の操作）
 # ----------------------------------------------------------------------
@@ -53,7 +99,9 @@ def filter_tokens_df(
     *,
     pos_keep: Optional[Iterable[str]] = None,
     pos_exclude: Optional[Iterable[str]] = None,
+    stopwords=None,
     strict: bool = True,
+    keep_original_index: bool = False,
 ) -> pd.DataFrame:
     """
     tokenize 後の DataFrame に対して品詞フィルタを適用する
@@ -66,8 +114,18 @@ def filter_tokens_df(
         残す品詞（大分類）
     pos_exclude : iterable[str], optional
         除外する品詞（大分類）
+    stopwords : optional
+        除外語（word 列で判定）。str / list / tuple / set / pandas.Series / pandas.Index /
+        それらの入れ子を受け付け、内部で良しなに集合化して除外する。
+        例:
+            stopwords="ある"
+            stopwords=["ある", "いる"]
+            stopwords=df["word"].value_counts().head(10)
+            stopwords=[["ある", "いる"], df["word"].value_counts().head(10)]
     strict : bool, default True
         keep / exclude の同時指定時に矛盾を検出するか
+    keep_original_index : bool, default False
+        True の場合、元の index を保持する。False の場合、index を振り直す。
 
     Returns
     -------
@@ -88,7 +146,14 @@ def filter_tokens_df(
     if excl_set is not None:
         s = s[~s["pos"].isin(excl_set)]
 
-    return s.reset_index(drop=True)
+    if stopwords is not None and not s.empty:
+        if "word" not in s.columns:
+            raise KeyError("filter_tokens_df: stopwords が指定されましたが DataFrame に 'word' 列がありません")
+        sw_set = _normalize_stopwords(stopwords)
+        if sw_set:
+            s = s[~s["word"].isin(sw_set)]
+
+    return s if keep_original_index else s.reset_index(drop=True)
 
 
 # ----------------------------------------------------------------------
@@ -179,9 +244,6 @@ def tokenize_text_sudachi(
     if s == "":
         return []
 
-    # Gemini 指摘の通り：
-    # SplitMode は tokenizer インスタンスの属性である保証がないため、
-    # sudachipy から明示的に import して参照する。
     try:
         from sudachipy import SplitMode
     except ImportError as e:
@@ -199,7 +261,6 @@ def tokenize_text_sudachi(
 
     records: List[Tuple[str, str, Optional[Dict[str, Any]]]] = []
     for m in tokenizer.tokenize(s, mode):
-        # word の作り方（ユーザーが書きやすいように代表パターンを引数化）
         if word_form is None:
             word = m.dictionary_form() if use_base_form else m.surface()
         else:
@@ -253,7 +314,7 @@ def tokenize_df(
     テキスト DataFrame を縦持ち token DataFrame に変換する（入口関数）
 
     方針
-    - tokenize_df は Janome / Sudachi 共通の引数だけに寄せる（学部生向け）
+    - tokenize_df は Janome / Sudachi 共通の引数だけに寄せる
     - Sudachi の split_mode / word_form を変えたい場合は tokenize_text_fn を使用する
 
     Parameters
@@ -286,7 +347,6 @@ def tokenize_df(
     pandas.DataFrame
         columns: [id_col, "word", "pos", extra_col(optional)]
     """
-    # 入力チェック（列名ミスを早期に検出）
     if id_col not in df.columns:
         raise KeyError(
             f"tokenize_df: DataFrame に id_col={id_col!r} 列がありません。"
@@ -298,7 +358,6 @@ def tokenize_df(
             f"存在する列: {list(df.columns)}"
         )
 
-    # tokenize_text_fn が与えられていればそれを最優先
     if tokenize_text_fn is None:
         eng = str(engine).lower()
 
@@ -321,7 +380,6 @@ def tokenize_df(
                 from sudachipy import dictionary
                 tokenizer = dictionary.Dictionary().create()
 
-            # split_mode は tokenize_df からは触らない（必要なら tokenize_text_fn で指定する）
             def _fn(t: str):
                 return tokenize_text_sudachi(
                     t,
@@ -350,16 +408,14 @@ def tokenize_df(
 
     out = pd.DataFrame(records)
 
-    # stopwords
-    if stopwords is not None and not out.empty:
-        out = out[~out["word"].isin(set(stopwords))]
+    # stopwords はここでは除外しない（filter_tokens_df に一本化）
 
-    # pos filter（必要なら）
     if not out.empty:
         out = filter_tokens_df(
             out,
             pos_keep=pos_keep,
             pos_exclude=pos_exclude,
+            stopwords=stopwords,
             strict=True,
         )
 
@@ -378,25 +434,62 @@ def tokens_to_text(
     sep: str = " ",
     pos_keep: Optional[Iterable[str]] = None,
     pos_exclude: Optional[Iterable[str]] = None,
+    stopwords=None,
+    per_doc: bool = False,
     strict: bool = True,
-) -> pd.DataFrame:
+):
     """
-    token DataFrame を文書単位の text に戻す
+    token DataFrame を text に戻す。
+
+    デフォルトでは、全トークンを結合して 1 本の大きなテキスト（str）を返す。
+    これは WordCloud など「コーパス全体を 1 つの入力文字列として扱う」用途を想定している。
+
+    per_doc=True を指定した場合は、文書IDごとに結合した DataFrame を返す。
+    （columns: [id_col, "text"]）
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        tokenize_df の出力（1行=1トークン）。
+    id_col : str
+        文書ID列名（per_doc=True のときに使用）。
+    word_col : str
+        トークン列名（結合対象）。
+    sep : str
+        トークン間の区切り文字。
+    pos_keep, pos_exclude : iterable[str], optional
+        品詞（大分類）フィルタ。filter_tokens_df に委譲する。
+    stopwords : optional
+        除外語（word_col で判定）。filter_tokens_df に委譲する。
+        str / list / tuple / set / pandas.Series / pandas.Index / 入れ子を受け付ける。
+    per_doc : bool, default False
+        True の場合、文書ごとの text を返す。False の場合、全体を 1 本に結合した str を返す。
+    strict : bool, default True
+        pos_keep / pos_exclude 同時指定時の矛盾チェックを行うか。
+
+    Returns
+    -------
+    str or pandas.DataFrame
+        per_doc=False: str（全体を 1 本に結合）
+        per_doc=True : pandas.DataFrame（文書ごとに結合）
     """
     s = filter_tokens_df(
         df,
         pos_keep=pos_keep,
         pos_exclude=pos_exclude,
+        stopwords=stopwords,
         strict=strict,
     )
 
-    text_df = (
-        s.groupby(id_col)[word_col]
-        .apply(lambda xs: sep.join(xs))
-        .reset_index(name="text")
-    )
+    if per_doc:
+        return (
+            s.groupby(id_col)[word_col]
+            .apply(lambda xs: sep.join(xs))
+            .reset_index(name="text")
+        )
 
-    return text_df
+    # 全トークンを 1 本に結合（入力順を尊重）
+    return sep.join(s[word_col].astype(str).tolist())
 
 
 __all__ = [

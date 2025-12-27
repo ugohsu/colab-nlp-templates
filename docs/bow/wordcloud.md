@@ -226,7 +226,7 @@ create_wordcloud(
 #### 使用例
 
 ```python
-sentence = tokens_to_text(tokens_df, pos_keep="名詞")
+sentence = tokens_to_text(tokens_df, pos_keep={"名詞"})
 
 # 事前に font_path を用意しておく（テンプレ等で取得したパス）
 print(font_path)

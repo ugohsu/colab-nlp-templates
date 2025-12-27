@@ -11,7 +11,7 @@ WordCloud は、形態素解析後の **Bag of Words（BoW）表現**を可視�
 
 ## 最小構成での使い方（Colab・ワンコピペ）
 
-以下のセルを **上から順に実行**してください。
+以下のセルを実行してください。
 
 ```python
 !pip install wordcloud
@@ -60,29 +60,100 @@ print(font_path)
 ### tokens_to_text
 
 ```python
-tokens_to_text(df, pos_keep=None)
+tokens_to_text(
+    df,
+    *,
+    id_col="article_id",
+    word_col="word",
+    sep=" ",
+    pos_keep=None,
+    pos_exclude=None,
+    stopwords=None,
+    per_doc=False,
+    strict=True,
+)
 ```
 
 #### 役割
-- 形態素解析済み DataFrame から単語を抽出し、
-- **WordCloud / tf-idf / LDA などで使える分かち書きテキスト**を生成します。
+- 形態素解析済み DataFrame（`tokenize_df` の出力）から `word` 列を取り出し、
+- **分かち書きテキスト**（スペース区切り）を作ります。
+- `pos_keep` / `pos_exclude` / `stopwords` を指定すると、内部で `filter_tokens_df` を使ってフィルタしてから結合します。
+
+WordCloud に渡す用途では、**デフォルト（`per_doc=False`）のまま使う**のが基本です。  
+（WordCloud は通常、コーパス全体を 1 本の文字列として受け取ります）
 
 #### 引数
 
-- `df`  
-  形態素解析済み DataFrame  
-  （`word`, `pos` 列を含むこと）
+- `df`（必須）  
+  形態素解析済み DataFrame（最低限 `word`, `pos` 列を含む）
+
+- `id_col`（任意）  
+  文書ID列名（`per_doc=True` のときに使用）  
+  - 既定：`"article_id"`
+
+- `word_col`（任意）  
+  トークン列名（結合対象）  
+  - 既定：`"word"`
+
+- `sep`（任意）  
+  トークン間の区切り文字  
+  - 既定：`" "`（半角スペース）
 
 - `pos_keep`（任意）  
-  抽出対象とする品詞
-  - `None`：全品詞（既定）
-  - `"名詞"`：名詞のみ
-  - `("名詞", "動詞")`：複数指定
+  残す品詞（大分類）の集合  
+  - `None`：全品詞（既定）  
+  - `"名詞"` のような **1語**指定ではなく、`{"名詞"}` や `["名詞"]` のように指定してください  
+  - 例：`{"名詞"}`, `{"名詞", "動詞"}`
+
+- `pos_exclude`（任意）  
+  除外する品詞（大分類）の集合  
+  - `None`：除外なし（既定）  
+  - 例：`{"助詞", "助動詞", "記号"}`
+
+- `stopwords`（任意）  
+  除外する語（ストップワード）  
+  - `None`：除外なし（既定）  
+  - `str` / `list` / `tuple` / `set` / `pandas.Series` / `pandas.Index` / **入れ子**を受け付けます  
+  - `pandas.Series`（例：`value_counts()`）を渡した場合は **index 部分**が語として使われます
+
+- `per_doc`（任意）  
+  返り値の形式を切り替えます  
+  - `False`（既定）：**全トークンをまとめて 1 本の `str`** を返す（WordCloud 向け）  
+  - `True`：文書IDごとに結合した `DataFrame`（`[id_col, "text"]`）を返す
+
+- `strict`（任意）  
+  `pos_keep` と `pos_exclude` を同時指定したときの安全チェック  
+  - 既定：`True`  
+  - 必要に応じて `False` にできます（詳細は `filter_tokens_df` の説明を参照）
 
 #### 戻り値
 
-- `str`  
-  スペース区切りの分かち書きテキスト
+- `per_doc=False`（既定）：`str`  
+  スペース区切りの分かち書きテキスト（WordCloud などにそのまま渡せます）
+
+- `per_doc=True`：`pandas.DataFrame`  
+  文書IDごとの分かち書きテキスト（columns: `[id_col, "text"]`）
+
+#### 使用例
+
+```python
+# 例1：そのまま（全トークンを 1 本の文字列にする：WordCloud 向け）
+sentence = tokens_to_text(df_tokens)
+
+# 例2：名詞だけ残して 1 本の文字列にする
+sentence = tokens_to_text(df_tokens, pos_keep={"名詞"})
+
+# 例3：助詞・記号を落として、さらに stopwords も除外
+vc_top10 = df_tokens["word"].value_counts().head(10)
+sentence = tokens_to_text(
+    df_tokens,
+    pos_exclude={"助詞", "助動詞", "記号"},
+    stopwords=[vc_top10, ["ある", "いる"]],
+)
+
+# 例4：文書ごとの text を作る（必要なときだけ）
+df_text = tokens_to_text(df_tokens, per_doc=True)
+```
 
 ---
 

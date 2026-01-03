@@ -1,3 +1,17 @@
+# ⚠️ アーカイブのお知らせ / Archived
+
+> **Note**
+> **本リポジトリ (`colab-nlp-templates`) の更新は終了し、アーカイブされました。**
+> 
+> 機能は整理・分割され、現在は以下の 2 つの新しいリポジトリで開発・メンテナンスを継続しています。今後は下記をご利用ください。
+>
+> - **[colab-nlp](https://github.com/ugohsu/colab-nlp)**
+>   - 自然言語処理（形態素解析、BoW、WordCloudなど）の機能はこちらに移動しました。
+> - **[colab-common](https://github.com/ugohsu/colab-common)**
+>   - データの入出力（Google Sheets, SQLite, テキスト読み込み）や共通設定はこちらに移動しました。
+
+---
+
 # Colab NLP Templates
 
 このリポジトリは、**Google Colaboratory 上で自然言語処理（NLP）を学ぶためのテンプレート・関数・解説ドキュメント**をまとめた教材用リポジトリです。
